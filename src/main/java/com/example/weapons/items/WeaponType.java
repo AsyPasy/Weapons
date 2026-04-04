@@ -1,47 +1,35 @@
 package com.example.weapons.items;
 
-/**
- * Enum registry for every custom weapon.
- * id  — stored in PDC to identify the item (never use display name for identity).
- * meleeDamage — damage applied by WeaponCombatListener on left-click attacks.
- */
 public enum WeaponType {
 
-    // ── Mid-game ──────────────────────────────────────────────────────────────
-    GREATSWORD("greatsword", 20.0),
-
-    // ── Late-game ─────────────────────────────────────────────────────────────
-    DOMINICAN_AXE("dominican_axe", 35.0),
-    ARCANIST_STAFF("arcanist_staff", 15.0),
-    ARCHMAGES_WAND("archmages_wand", 50.0),
-    SHADOWBLADE("shadowblade", 15.0),
-    ASSASSINS_BLADE("assassins_blade", 25.0),
-
-    // ── Support ───────────────────────────────────────────────────────────────
-    HARMONY_WAND("harmony_wand", 0.0);      // purely projectile — no melee damage
+    GREATSWORD("greatsword",         8.0,  12.0, false),
+    DOMINICAN_AXE("dominican_axe",  10.0,  13.0, false),
+    ARCANIST_STAFF("arcanist_staff",  0.0,   0.0, true),
+    ARCHMAGES_WAND("archmages_wand",  0.0,   0.0, true),
+    SHADOWBLADE("shadowblade",        5.6,   7.0, false),
+    ASSASSINS_BLADE("assassins_blade",7.2,   9.0, false),
+    HARMONY_WAND("harmony_wand",      0.0,   0.0, true);
 
     private final String id;
-    private final double meleeDamage;
+    private final double normalDamage;
+    private final double critDamage;
+    private final boolean wand;
 
-    WeaponType(String id, double meleeDamage) {
-        this.id = id;
-        this.meleeDamage = meleeDamage;
+    WeaponType(String id, double normalDamage, double critDamage, boolean wand) {
+        this.id           = id;
+        this.normalDamage = normalDamage;
+        this.critDamage   = critDamage;
+        this.wand         = wand;
     }
 
-    public String getId() {
-        return id;
-    }
+    public String  getId()           { return id; }
+    public double  getNormalDamage() { return normalDamage; }
+    public double  getCritDamage()   { return critDamage; }
+    public boolean isWand()          { return wand; }
 
-    public double getMeleeDamage() {
-        return meleeDamage;
-    }
-
-    /** Returns null if the id doesn't match any weapon. */
     public static WeaponType fromId(String id) {
         if (id == null) return null;
-        for (WeaponType type : values()) {
-            if (type.id.equals(id)) return type;
-        }
+        for (WeaponType t : values()) if (t.id.equals(id)) return t;
         return null;
     }
 }
