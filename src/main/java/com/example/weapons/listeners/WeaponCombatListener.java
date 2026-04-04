@@ -3,6 +3,7 @@ package com.example.weapons.listeners;
 import com.example.weapons.WeaponsPlugin;
 import com.example.weapons.items.ItemKeys;
 import com.example.weapons.items.WeaponType;
+import com.example.weapons.managers.CooldownManager;
 import com.example.weapons.managers.WeaponStateManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Particle;
@@ -17,31 +18,37 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.util.Vector;
 
 /**
  * Handles all combat-phase weapon interactions:
  *
- *  1. Left-click melee → override damage for custom weapons.
- *  2. Arcanist Staff projectile hit → apply correct projectile damage.
- *  3. Harmony Wand projectile hit → cancel vanilla damage, apply DOT/HOT.
- *  4. Greatsword reflect shield → damage attacker by 80% when player is hit.
- *  5. Assassin's Blade shadow phase → cancel all incoming damage.
- *  6. Assassin's Blade shadow phase → cancel natural health regen.
- *  7. Player quit → clean up state.
+ *  1. Ability-damage bypass  — DOT ticks and ability impacts skip damage override.
+ *  2. Wand melee cancel      — wands deal no melee damage.
+ *  3. Crit system            — crit = full listed damage; non-crit = 80 % of that.
+ *  4. Dominican Axe          — melee attack cooldown to prevent spam (0.7 s).
+ *  5. Greatsword reflect     — 80 % reflect when shield is active.
+ *  6. Shadow phase           — all incoming damage cancelled.
+ *  7. Shadow regen block     — food/natural regen cancelled during shadow.
  */
 public final class WeaponCombatListener implements Listener {
 
+    // Separate cooldown key so the melee CD doesn't conflict with the ability CD
+    private static final String CD_DOMINICAN_MELEE = "dominican_melee";
+
     private final WeaponsPlugin plugin;
-    private final ItemKeys keys;
+    private final ItemKeys        keys;
     private final WeaponStateManager state;
+    private final CooldownManager   cooldowns;
 
     public WeaponCombatListener(WeaponsPlugin plugin) {
-        this.plugin = plugin;
-        this.keys   = plugin.getItemKeys();
-        this.state  = plugin.getStateManager();
+        this.plugin    = plugin;
+        this.keys      = plugin.getItemKeys();
+        this.state     = plugin.getStateManager();
+        this.cooldowns = plugin.getCooldownManager();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -51,93 +58,79 @@ public final class WeaponCombatListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
 
-        Entity damager   = event.getDamager();
-        Entity victim    = event.getEntity();
+        Entity damager = event.getDamager();
+        Entity victim  = event.getEntity();
 
-        // ── CASE 1: Player swings a custom weapon (melee) ────────────────────
+        // ── CASE 1: Player swings a custom weapon ─────────────────────────────
         if (damager instanceof Player attacker) {
+
+            // If this damage comes from an ability (DOT tick, dash, smash, etc.)
+            // the bypass flag is set — don't touch the damage at all.
+            if (state.isAbilityDamage(attacker.getUniqueId())) return;
+
             ItemStack held = attacker.getInventory().getItemInMainHand();
             WeaponType type = getWeaponType(held);
+            if (type == null) return;
 
-            if (type != null) {
-                // Override the damage to our configured value
-                event.setDamage(type.getMeleeDamage());
+            // Wands deal no melee damage
+            if (type.isWand()) {
+                event.setCancelled(true);
+                return;
+            }
 
-                // Harmony Wand does 0 melee — cancel any accidental melee hit
-                if (type == WeaponType.HARMONY_WAND) {
+            // Dominican Axe melee cooldown — prevents attack spam
+            if (type == WeaponType.DOMINICAN_AXE) {
+                if (cooldowns.isOnCooldown(attacker.getUniqueId(), CD_DOMINICAN_MELEE)) {
                     event.setCancelled(true);
                     return;
                 }
+                cooldowns.setCooldown(attacker.getUniqueId(), CD_DOMINICAN_MELEE, 700L);
             }
-            return; // don't fall through to projectile checks
-        }
 
-        // ── CASE 2: A tagged projectile hit something ─────────────────────────
-        if (damager instanceof Projectile proj) {
-            PersistentDataContainer pdc = proj.getPersistentDataContainer();
-            String projType = pdc.get(keys.PROJECTILE_TYPE, PersistentDataType.STRING);
-            if (projType == null) return;
+            // ── Crit system ───────────────────────────────────────────────────
+            // Crit = full listed damage; non-crit = 80 % of listed damage.
+            // Listed damage in the lore == critDamage.
+            boolean isCrit = isCriticalHit(attacker);
+            double  damage = isCrit ? type.getCritDamage() : type.getNormalDamage();
+            event.setDamage(damage);
 
-            switch (projType) {
-
-                // Arcanist Staff bolt: override damage with stored value
-                case "arcanist" -> {
-                    Double dmg = pdc.get(keys.PROJECTILE_DAMAGE, PersistentDataType.DOUBLE);
-                    if (dmg != null) event.setDamage(dmg);
-                }
-
-                // Harmony Wand bolt: cancel vanilla damage, apply DOT/HOT
-                case "harmony" -> {
-                    event.setCancelled(true);
-                    if (!(victim instanceof LivingEntity target)) return;
-
-                    // Identify shooter
-                    ProjectileSource source = proj.getShooter();
-                    Player shooter = (source instanceof Player p) ? p : null;
-
-                    if (target instanceof Player targetPlayer) {
-                        // Don't heal the shooter themselves (edge case: bolt comes back)
-                        if (targetPlayer.equals(shooter)) return;
-                        state.applyHarmonyHeal(targetPlayer);
-                    } else {
-                        // Mob / hostile entity — apply damage DOT
-                        state.applyHarmonyDamage(target, shooter);
-                    }
-                }
+            if (isCrit) {
+                // Spawn extra crit particles so players notice
+                victim.getWorld().spawnParticle(Particle.CRIT,
+                    victim.getLocation().add(0, 1, 0), 18, 0.3, 0.5, 0.3, 0.1);
             }
             return;
         }
 
-        // ── CASE 3: Player is the VICTIM — check shield / shadow ─────────────
+        // ── CASE 2: Victim is a Player — reflect / shadow checks ──────────────
         if (!(victim instanceof Player player)) return;
 
-        // Shadow phase: no one can attack this player
+        // Shadow phase: no incoming damage allowed
         if (state.isShadowInvisible(player.getUniqueId())) {
             event.setCancelled(true);
             return;
         }
 
-        // Reflect shield: damage attacker 80% of what they dealt
+        // Reflect shield: deal 80 % of final damage back to the actual attacker
         if (state.hasReflectShield(player.getUniqueId())) {
-            // We use getFinalDamage() which includes armour reduction
             double reflectAmount = event.getFinalDamage() * 0.8;
 
-            // Determine the actual living attacker to damage
             LivingEntity actualAttacker = null;
             if (damager instanceof LivingEntity le) {
                 actualAttacker = le;
-            } else if (damager instanceof Projectile proj2 &&
-                       proj2.getShooter() instanceof LivingEntity le2) {
+            } else if (damager instanceof Projectile proj &&
+                       proj.getShooter() instanceof LivingEntity le2) {
                 actualAttacker = le2;
             }
 
             if (actualAttacker != null) {
                 final LivingEntity finalAttacker = actualAttacker;
-                // Must schedule so reflect damage fires AFTER this event resolves
-                Bukkit.getScheduler().runTask(plugin, () ->
-                    finalAttacker.damage(reflectAmount, player));
-
-                // Particle feedback on the player
+                // Schedule so reflect fires AFTER this event resolves
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    state.addAbilityBypass(player.getUniqueId());
+                    finalAttacker.damage(reflectAmount, player);
+                    state.removeAbilityBypass(player.getUniqueId());
+                });
                 player.getWorld().spawnParticle(Particle.END_ROD,
                     player.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
             }
@@ -145,22 +138,19 @@ public final class WeaponCombatListener implements Listener {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  HEALTH REGEN — cancel food/natural regen during shadow phase
-    //  Potions (RegainReason.MAGIC) are still allowed per weapon description
+    //  SHADOW PHASE — block natural / food regen; allow potions
     // ─────────────────────────────────────────────────────────────────────────
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityRegainHealth(EntityRegainHealthEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
         if (!state.isShadowInvisible(player.getUniqueId())) return;
-
         var reason = event.getRegainReason();
-        // Cancel food saturation regen and natural regeneration effect
         if (reason == EntityRegainHealthEvent.RegainReason.SATIATED ||
             reason == EntityRegainHealthEvent.RegainReason.REGEN) {
             event.setCancelled(true);
         }
-        // EntityRegainHealthEvent.RegainReason.MAGIC (potions) is allowed
+        // MAGIC reason (splash/drink potions) is intentionally allowed
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -170,18 +160,33 @@ public final class WeaponCombatListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         state.cleanupPlayer(event.getPlayer().getUniqueId());
-        plugin.getCooldownManager().clearAll(event.getPlayer().getUniqueId());
+        cooldowns.clearAll(event.getPlayer().getUniqueId());
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  UTILITY
+    //  HELPERS
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Vanilla crit conditions:
+     *  - Player is falling (fallDistance > 0)
+     *  - Not on the ground
+     *  - Not in water / lava
+     *  - No Blindness effect
+     */
+    private boolean isCriticalHit(Player player) {
+        return player.getFallDistance() > 0.0f
+            && !player.isOnGround()
+            && !player.isInWater()
+            && player.getActivePotionEffects().stream()
+                   .noneMatch(e -> e.getType().equals(PotionEffectType.BLINDNESS));
+    }
 
     private WeaponType getWeaponType(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
         String id = item.getItemMeta()
-                        .getPersistentDataContainer()
-                        .get(keys.WEAPON_ID, PersistentDataType.STRING);
+            .getPersistentDataContainer()
+            .get(keys.WEAPON_ID, PersistentDataType.STRING);
         return WeaponType.fromId(id);
     }
 }
