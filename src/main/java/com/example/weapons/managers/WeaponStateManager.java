@@ -13,77 +13,71 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Central store for all transient weapon ability states.
  *
- * Tracks:
- *  - Greatsword  : reflect shield active
- *  - Arcanist    : charged shot ready
- *  - Archmage    : charge count
- *  - Assassin    : shadow invisibility active
- *  - Shadowblade : bleeding entities (recurring damage task)
- *  - Harmony     : DOT / HOT tasks on entities/players
+ *  abilityDamageBypass  — players whose outgoing damage should NOT be
+ *                         overridden by WeaponCombatListener (e.g. DOT ticks,
+ *                         ability impacts like Shadowstep or Ground Smash).
+ *  reflectShieldActive  — Greatsword reflect shield
+ *  chargedShotReady     — Arcanist Staff charged-shot flag
+ *  archmageCharges      — Archmage's Wand remaining charges
+ *  shadowInvisible      — Assassin's Blade shadow phase
+ *  bleedTasks           — Shadowblade bleeding DOT
+ *  harmonyDmgTasks      — Harmony Wand damage DOT (stackable)
+ *  harmonyHealTasks     — Harmony Wand heal HOT (stackable)
  */
 public final class WeaponStateManager {
 
     private final WeaponsPlugin plugin;
 
-    // ── Greatsword reflect shield ─────────────────────────────────────────────
+    // ── Ability-damage bypass ─────────────────────────────────────────────────
+    /** Players whose next EntityDamageByEntity event must NOT be damage-overridden. */
+    private final Set<UUID> abilityDamageBypass = new HashSet<>();
+
+    // ── Greatsword ────────────────────────────────────────────────────────────
     private final Set<UUID> reflectShieldActive = new HashSet<>();
 
-    // ── Arcanist Staff charged shot ───────────────────────────────────────────
+    // ── Arcanist Staff ────────────────────────────────────────────────────────
     private final Set<UUID> chargedShotReady = new HashSet<>();
 
-    // ── Archmage's Wand charges ───────────────────────────────────────────────
-    /** Default 3 charges; removed entry = full charges */
+    // ── Archmage's Wand ───────────────────────────────────────────────────────
     private final Map<UUID, Integer> archmageCharges = new HashMap<>();
 
-    // ── Assassin's Blade shadow invisibility ──────────────────────────────────
+    // ── Assassin's Blade ──────────────────────────────────────────────────────
     private final Set<UUID> shadowInvisible = new HashSet<>();
-    /** Tasks that expire the shadow invisibility after 5 s */
     private final Map<UUID, BukkitTask> shadowTasks = new HashMap<>();
 
-    // ── Bleeding entities (Shadowblade) ───────────────────────────────────────
-    /** entityUUID → repeating bleed task */
+    // ── Shadowblade bleed ─────────────────────────────────────────────────────
     private final Map<UUID, BukkitTask> bleedTasks = new HashMap<>();
 
-    // ── Harmony Wand DOT / HOT ────────────────────────────────────────────────
-    /** entityUUID → active harmony task */
-    private final Map<UUID, BukkitTask> harmonyTasks = new HashMap<>();
+    // ── Harmony Wand (stackable) ──────────────────────────────────────────────
+    private final Map<UUID, List<BukkitTask>> harmonyDmgTasks  = new HashMap<>();
+    private final Map<UUID, List<BukkitTask>> harmonyHealTasks = new HashMap<>();
 
-    public WeaponStateManager(WeaponsPlugin plugin) {
-        this.plugin = plugin;
-    }
+    public WeaponStateManager(WeaponsPlugin plugin) { this.plugin = plugin; }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  GREATSWORD — Reflect Shield
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ ABILITY BYPASS ══════════════════════════════════════════════════════
 
-    public boolean hasReflectShield(UUID playerId) {
-        return reflectShieldActive.contains(playerId);
-    }
+    /** Mark that the next entity.damage() call from this player is an ability
+     *  (DOT tick, dash, smash, etc.) and must skip the weapon-damage override. */
+    public void addAbilityBypass(UUID playerId)    { abilityDamageBypass.add(playerId); }
+    public void removeAbilityBypass(UUID playerId) { abilityDamageBypass.remove(playerId); }
+    public boolean isAbilityDamage(UUID playerId)  { return abilityDamageBypass.contains(playerId); }
 
-    /**
-     * Activates the reflect shield for {@code durationTicks} ticks, then expires it.
-     * Visual feedback via particles is spawned at activation.
-     */
+    // ═══ GREATSWORD — Reflect Shield ═════════════════════════════════════════
+
+    public boolean hasReflectShield(UUID playerId) { return reflectShieldActive.contains(playerId); }
+
     public void activateReflectShield(Player player, long durationTicks) {
         UUID uid = player.getUniqueId();
         reflectShieldActive.add(uid);
-
-        // Burst of particles on activation
         player.getWorld().spawnParticle(Particle.END_ROD,
             player.getLocation().add(0, 1, 0), 40, 0.6, 0.8, 0.6, 0.15);
         player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1f, 1.5f);
         player.sendActionBar(Component.text("⚔ Reflective Guard ACTIVE!", NamedTextColor.AQUA));
-
-        // Schedule expiry
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             reflectShieldActive.remove(uid);
             if (player.isOnline()) {
@@ -94,42 +88,28 @@ public final class WeaponStateManager {
         }, durationTicks);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  ARCANIST STAFF — Charged Shot
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ ARCANIST STAFF — Charged Shot ═══════════════════════════════════════
 
-    public boolean hasChargedShot(UUID playerId) {
-        return chargedShotReady.contains(playerId);
-    }
-
+    public boolean hasChargedShot(UUID playerId)              { return chargedShotReady.contains(playerId); }
     public void setChargedShot(UUID playerId, boolean charged) {
-        if (charged) chargedShotReady.add(playerId);
-        else chargedShotReady.remove(playerId);
+        if (charged) chargedShotReady.add(playerId); else chargedShotReady.remove(playerId);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  ARCHMAGE'S WAND — Charge System (3 uses → 90 s cooldown)
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ ARCHMAGE'S WAND — Charges ═══════════════════════════════════════════
 
-    /** Returns remaining charges (1–3). Defaults to 3 if never set. */
-    public int getArcmageCharges(UUID playerId) {
-        return archmageCharges.getOrDefault(playerId, 3);
-    }
+    public int getArcmageCharges(UUID playerId) { return archmageCharges.getOrDefault(playerId, 3); }
 
     /**
-     * Consumes one charge.  Returns false if no charges remain (cooldown is active).
-     * When charges reach zero, schedules a recharge after 90 s.
+     * Consumes one charge. Returns false if no charges remain (recharging).
+     * Schedules 90-second recharge when charges hit zero.
      */
     public boolean consumeArcmageCharge(Player player) {
         UUID uid = player.getUniqueId();
         int current = getArcmageCharges(uid);
-        if (current <= 0) return false;  // cooldown active, no charges
-
+        if (current <= 0) return false;
         int remaining = current - 1;
         archmageCharges.put(uid, remaining);
-
         if (remaining <= 0) {
-            // Out of charges — start recharge timer
             player.sendActionBar(Component.text("✦ Arcane Burst — recharging in 90s...", NamedTextColor.RED));
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 archmageCharges.put(uid, 3);
@@ -142,37 +122,21 @@ public final class WeaponStateManager {
         return true;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  ASSASSIN'S BLADE — Shadow Invisibility
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ ASSASSIN'S BLADE — Shadow Invisibility ══════════════════════════════
 
-    public boolean isShadowInvisible(UUID playerId) {
-        return shadowInvisible.contains(playerId);
-    }
+    public boolean isShadowInvisible(UUID playerId) { return shadowInvisible.contains(playerId); }
 
-    /**
-     * Makes the player invisible for 5 seconds with Speed II.
-     * During this phase: enemies cannot attack them, natural healing is cancelled.
-     */
     public void activateShadow(Player player) {
         UUID uid = player.getUniqueId();
-
-        // Cancel any previous shadow task
         BukkitTask existing = shadowTasks.remove(uid);
         if (existing != null) existing.cancel();
-
         shadowInvisible.add(uid);
-
-        // Potion effects — invisibility + Speed II
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 5 * 20 + 10, 0, false, false, false));
         player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 5 * 20 + 10, 1, false, true, true));
-
         player.getWorld().spawnParticle(Particle.PORTAL,
             player.getLocation().add(0, 1, 0), 50, 0.4, 0.8, 0.4, 0.3);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.5f);
         player.sendActionBar(Component.text("☠ The Shadow — you vanish...", NamedTextColor.DARK_PURPLE));
-
-        // Schedule expiry after 5 s
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             shadowInvisible.remove(uid);
             shadowTasks.remove(uid);
@@ -183,145 +147,116 @@ public final class WeaponStateManager {
                 player.sendActionBar(Component.text("☠ The Shadow — you reappear.", NamedTextColor.GRAY));
             }
         }, 5L * 20L);
-
         shadowTasks.put(uid, task);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  SHADOWBLADE — Bleeding
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ SHADOWBLADE — Bleeding DOT ══════════════════════════════════════════
 
     /**
-     * Applies a bleeding effect to an entity: 1 damage every 20 ticks for 10 seconds.
-     * Refreshes if already bleeding.
+     * 1 damage every 20 ticks for 10 seconds.
+     * Uses ability bypass so CombatListener doesn't override the tick damage.
      */
     public void applyBleeding(LivingEntity entity, Player attacker) {
         UUID entityId = entity.getUniqueId();
-
-        // Cancel existing bleed task (refresh/reset)
         BukkitTask existing = bleedTasks.remove(entityId);
         if (existing != null) existing.cancel();
 
-        BukkitRunnable bleedTask = new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             int pulses = 0;
-
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!entity.isValid() || entity.isDead() || pulses >= 10) {
                     bleedTasks.remove(entityId);
-                    cancel();
-                    return;
+                    cancel(); return;
                 }
+                // Bypass weapon-damage override for this tick
+                addAbilityBypass(attacker.getUniqueId());
                 entity.damage(1.0, attacker);
-                // Blood-like particles
+                removeAbilityBypass(attacker.getUniqueId());
                 entity.getWorld().spawnParticle(Particle.CRIT,
-                    entity.getLocation().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0.05);
+                    entity.getLocation().add(0, 1, 0), 4, 0.3, 0.3, 0.3, 0.05);
                 pulses++;
             }
-        };
-
-        BukkitTask task = bleedTask.runTaskTimer(plugin, 20L, 20L);
+        }.runTaskTimer(plugin, 20L, 20L);
         bleedTasks.put(entityId, task);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  HARMONY WAND — DOT on mobs / HOT on players
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ HARMONY WAND — Stackable DOT / HOT ══════════════════════════════════
 
     /**
-     * Applies 5 damage × 3 pulses (every 20 ticks) to a living entity.
-     * @param entity  the mob that was hit
-     * @param shooter the player who fired (used as damage source)
+     * Applies 4 HP damage × 3 pulses (every 20 ticks) to a living entity.
+     * Stacks: calling again does NOT cancel previous instances.
      */
     public void applyHarmonyDamage(LivingEntity entity, Player shooter) {
-        UUID entityId = entity.getUniqueId();
+        List<BukkitTask> tasks = harmonyDmgTasks.computeIfAbsent(
+            entity.getUniqueId(), k -> new ArrayList<>());
 
-        BukkitTask existing = harmonyTasks.remove(entityId);
-        if (existing != null) existing.cancel();
-
-        BukkitRunnable task = new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             int pulses = 0;
-
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!entity.isValid() || entity.isDead() || pulses >= 3) {
-                    harmonyTasks.remove(entityId);
-                    cancel();
-                    return;
+                    tasks.remove(this); cancel(); return;  // note: this works because BukkitRunnable IS the task
                 }
-                entity.damage(5.0, shooter);
+                addAbilityBypass(shooter.getUniqueId());
+                entity.damage(4.0, shooter);   // 2 hearts
+                removeAbilityBypass(shooter.getUniqueId());
                 entity.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR,
-                    entity.getLocation().add(0, 1.2, 0), 6, 0.2, 0.2, 0.2, 0);
+                    entity.getLocation().add(0, 1.2, 0), 5, 0.2, 0.2, 0.2, 0);
                 pulses++;
             }
-        };
-
-        BukkitTask t = task.runTaskTimer(plugin, 0L, 20L);
-        harmonyTasks.put(entityId, t);
+        }.runTaskTimer(plugin, 0L, 20L);
+        tasks.add(task);
     }
 
     /**
-     * Heals a player for 5 HP × 3 pulses (every 20 ticks).
-     * @param target the allied player who was hit by the bolt
+     * Heals a player for 4 HP × 3 pulses (every 20 ticks).
+     * Stacks: calling again does NOT cancel previous instances.
      */
     public void applyHarmonyHeal(Player target) {
-        UUID targetId = target.getUniqueId();
+        List<BukkitTask> tasks = harmonyHealTasks.computeIfAbsent(
+            target.getUniqueId(), k -> new ArrayList<>());
 
-        BukkitTask existing = harmonyTasks.remove(targetId);
-        if (existing != null) existing.cancel();
-
-        BukkitRunnable task = new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             int pulses = 0;
-
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!target.isOnline() || target.isDead() || pulses >= 3) {
-                    harmonyTasks.remove(targetId);
-                    cancel();
-                    return;
+                    tasks.remove(this); cancel(); return;
                 }
-                double newHealth = Math.min(target.getMaxHealth(), target.getHealth() + 5.0);
-                target.setHealth(newHealth);
+                double newHp = Math.min(target.getMaxHealth(), target.getHealth() + 4.0);
+                target.setHealth(newHp);
                 target.getWorld().spawnParticle(Particle.HEART,
-                    target.getLocation().add(0, 2, 0), 4, 0.3, 0.3, 0.3, 0);
-                target.sendActionBar(Component.text("❤ +5 healing pulse", NamedTextColor.GREEN));
+                    target.getLocation().add(0, 2.2, 0), 4, 0.4, 0.3, 0.4, 0);
+                target.sendActionBar(Component.text("❤ +4 healing pulse", NamedTextColor.GREEN));
                 pulses++;
             }
-        };
-
-        BukkitTask t = task.runTaskTimer(plugin, 0L, 20L);
-        harmonyTasks.put(targetId, t);
+        }.runTaskTimer(plugin, 0L, 20L);
+        tasks.add(task);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  CLEANUP — called from onDisable and PlayerQuitEvent
-    // ═════════════════════════════════════════════════════════════════════════
+    // ═══ CLEANUP ═════════════════════════════════════════════════════════════
 
-    /** Cancels all running tasks. Call from plugin onDisable(). */
     public void cleanup() {
         bleedTasks.values().forEach(BukkitTask::cancel);
         bleedTasks.clear();
-
-        harmonyTasks.values().forEach(BukkitTask::cancel);
-        harmonyTasks.clear();
-
+        harmonyDmgTasks.values().forEach(list -> list.forEach(BukkitTask::cancel));
+        harmonyDmgTasks.clear();
+        harmonyHealTasks.values().forEach(list -> list.forEach(BukkitTask::cancel));
+        harmonyHealTasks.clear();
         shadowTasks.values().forEach(BukkitTask::cancel);
         shadowTasks.clear();
-
         reflectShieldActive.clear();
         chargedShotReady.clear();
         shadowInvisible.clear();
         archmageCharges.clear();
+        abilityDamageBypass.clear();
     }
 
-    /** Cleans up state for a specific player on quit. */
     public void cleanupPlayer(UUID playerId) {
         reflectShieldActive.remove(playerId);
         chargedShotReady.remove(playerId);
         shadowInvisible.remove(playerId);
         archmageCharges.remove(playerId);
-
-        BukkitTask shadowTask = shadowTasks.remove(playerId);
-        if (shadowTask != null) shadowTask.cancel();
+        abilityDamageBypass.remove(playerId);
+        BukkitTask st = shadowTasks.remove(playerId);
+        if (st != null) st.cancel();
     }
 }
