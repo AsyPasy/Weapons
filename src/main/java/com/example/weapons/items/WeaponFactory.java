@@ -55,7 +55,7 @@ public final class WeaponFactory {
                 hint("back to the attacker."),
                 cooldown("30 seconds")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.GREATSWORD.getId())
@@ -80,7 +80,7 @@ public final class WeaponFactory {
                 hint("and deals 50 damage in the area."),
                 cooldown("10 seconds")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.DOMINICAN_AXE.getId())
@@ -103,7 +103,7 @@ public final class WeaponFactory {
                 Component.empty(),
                 hint("Right-Click to fire a magic bolt.")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ARCANIST_STAFF.getId())
@@ -125,7 +125,7 @@ public final class WeaponFactory {
                 hint("3 charges before entering cooldown."),
                 cooldown("90 seconds (after 3 uses)")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ARCHMAGES_WAND.getId())
@@ -146,7 +146,7 @@ public final class WeaponFactory {
                 hint("Applies Bleeding: 1 dmg/sec for 10s."),
                 cooldown("10 seconds")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.SHADOWBLADE.getId())
@@ -168,7 +168,7 @@ public final class WeaponFactory {
                 hint("Natural healing disabled (potions work)."),
                 cooldown("40 seconds")
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ASSASSINS_BLADE.getId())
@@ -193,7 +193,7 @@ public final class WeaponFactory {
                 Component.text(" ▸ Ally hit: ", NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false)
                     .append(Component.text("5 heal × 3 pulses (1s apart)", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))
             ))
-            .enchant(Enchantment.DURABILITY, 1)
+            .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.HARMONY_WAND.getId())
