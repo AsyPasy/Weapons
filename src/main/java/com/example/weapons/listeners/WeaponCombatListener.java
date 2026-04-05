@@ -111,21 +111,33 @@ public final class WeaponCombatListener implements Listener {
             return;
         }
 
-        // Reflect shield: deal 80 % of final damage back to the actual attacker
-    double raw = event.getDamage(); // raw, before armor
-event.setCancelled(true);       // ignore armor entirely
+        // Reflect shield: 80% raw to attacker, 20% raw to player, ignore armor
+if (state.hasReflectShield(player.getUniqueId())) {
+    LivingEntity actualAttacker = null;
+    if (damager instanceof LivingEntity le) {
+        actualAttacker = le;
+    } else if (damager instanceof Projectile proj &&
+               proj.getShooter() instanceof LivingEntity le2) {
+        actualAttacker = le2;
+    }
 
-// Player takes 20% raw
-double newHp = Math.max(0, player.getHealth() - raw * 0.2);
-player.setHealth(newHp);
+    if (actualAttacker != null) {
+        double raw = event.getDamage();
+        event.setCancelled(true);
 
-// Attacker takes 80% raw
-final LivingEntity finalAttacker = actualAttacker;
-Bukkit.getScheduler().runTask(plugin, () -> {
-    state.addAbilityBypass(player.getUniqueId());
-    finalAttacker.damage(raw * 0.8, player);
-    state.removeAbilityBypass(player.getUniqueId());
-});
+        double newHp = Math.max(0, player.getHealth() - raw * 0.2);
+        player.setHealth(newHp);
+
+        final LivingEntity finalAttacker = actualAttacker;
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            state.addAbilityBypass(player.getUniqueId());
+            finalAttacker.damage(raw * 0.8, player);
+            state.removeAbilityBypass(player.getUniqueId());
+        });
+        player.getWorld().spawnParticle(Particle.END_ROD,
+            player.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
+    }
+}
 
     // ─────────────────────────────────────────────────────────────────────────
     //  SHADOW PHASE — block natural / food regen; allow potions
