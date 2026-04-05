@@ -20,6 +20,7 @@ public final class WeaponsPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        new CustomRecipes(this).register();
         instance = this;
 
         // Initialize key registry first — requires plugin instance
