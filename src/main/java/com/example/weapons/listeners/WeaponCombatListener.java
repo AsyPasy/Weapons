@@ -113,13 +113,15 @@ public final class WeaponCombatListener implements Listener {
 
         // Reflect shield: 80% raw to attacker, 20% raw to player, ignore armor
 if (state.hasReflectShield(player.getUniqueId())) {
-    LivingEntity actualAttacker = null;
-    if (damager instanceof LivingEntity le) {
-        actualAttacker = le;
-    } else if (damager instanceof Projectile proj &&
-               proj.getShooter() instanceof LivingEntity le2) {
-        actualAttacker = le2;
+ LivingEntity actualAttacker = null;
+if (damager instanceof LivingEntity) {
+    actualAttacker = (LivingEntity) damager;
+} else if (damager instanceof Projectile) {
+    Projectile proj = (Projectile) damager;
+    if (proj.getShooter() instanceof LivingEntity) {
+        actualAttacker = (LivingEntity) proj.getShooter();
     }
+}
 
     if (actualAttacker != null) {
         double raw = event.getDamage();
