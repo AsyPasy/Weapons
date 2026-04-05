@@ -180,7 +180,7 @@ public final class WeaponFactory {
 
     private ItemStack buildHarmonyWand() {
         return new ItemBuilder(Material.STICK)
-            .name(text("❤ Harmony Wand", NamedTextColor.GREEN))
+            .name(text("Harmony Wand", NamedTextColor.GREEN))
             .lore(List.of(
                 gray("Support Weapon  |  Wand"),
                 Component.empty(),
@@ -196,7 +196,7 @@ public final class WeaponFactory {
                         .decoration(TextDecoration.ITALIC, false)),
                 Component.empty(),
                 hint("Can stack multiple bolts on the same target."),
-                hint("0.5s cooldown between shots.")
+                hint("Attack: 1s cooldown  |  Heal: 2s cooldown.")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
