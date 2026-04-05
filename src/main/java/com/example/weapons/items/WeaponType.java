@@ -2,7 +2,7 @@ package com.example.weapons.items;
 
 public enum WeaponType {
 
-    GREATSWORD("greatsword",         8.0,  12.0, false),
+    GREATSWORD("greatsword",         7.0,  10.0, false),
     DOMINICAN_AXE("dominican_axe",  10.0,  13.0, false),
     ARCANIST_STAFF("arcanist_staff",  0.0,   0.0, true),
     ARCHMAGES_WAND("archmages_wand",  0.0,   0.0, true),
