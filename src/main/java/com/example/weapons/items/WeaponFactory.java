@@ -50,6 +50,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.GREATSWORD.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -74,6 +75,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.DOMINICAN_AXE.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -97,6 +99,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ARCANIST_STAFF.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -122,6 +125,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ARCHMAGES_WAND.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -144,6 +148,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.SHADOWBLADE.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -167,6 +172,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.ASSASSINS_BLADE.getId())
+            .maxStackSize(1)
             .build();
     }
 
@@ -196,6 +202,7 @@ public final class WeaponFactory {
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
             .unbreakable(true)
             .pdc(plugin.getItemKeys().WEAPON_ID, WeaponType.HARMONY_WAND.getId())
+            .maxStackSize(1)
             .build();
     }
 
