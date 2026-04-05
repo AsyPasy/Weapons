@@ -37,8 +37,8 @@ public final class WeaponFactory {
             .lore(List.of(
                 gray("Mid-Game Weapon"),
                 Component.empty(),
-                stat("Normal Hit", "8"),
-                stat("Critical Hit", "12"),
+                stat("Normal Hit", "7"),
+                stat("Critical Hit", "10"),
                 Component.empty(),
                 abilityTitle("Reflective Guard"),
                 hint("Right-Click to activate a 5s shield."),
