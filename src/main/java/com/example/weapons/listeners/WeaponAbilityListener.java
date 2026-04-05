@@ -51,7 +51,8 @@ public final class WeaponAbilityListener implements Listener {
     private static final String CD_ARCHMAGE_SHOT    = "archmage_shot";     // 0.5 s per shot
     private static final String CD_SHADOWBLADE      = "shadowblade";
     private static final String CD_ASSASSIN         = "assassins_blade";
-    private static final String CD_HARMONY          = "harmony_wand";      // 0.5 s per shot
+    private static final String CD_HARMONY_DMG  = "harmony_dmg";   // 1s
+    private static final String CD_HARMONY_HEAL = "harmony_heal";  // 2s
 
     private final WeaponsPlugin      plugin;
     private final ItemKeys            keys;
@@ -277,7 +278,7 @@ public final class WeaponAbilityListener implements Listener {
 
     private void fireHarmonyDamageBeam(Player player) {
         UUID uid = player.getUniqueId();
-        if (cooldowns.isOnCooldown(uid, CD_HARMONY)) return;
+        if (cooldowns.isOnCooldown(uid, CD_HARMONY_DMG)) return;
 
         LivingEntity hit = fireParticleBeam(player, Particle.CRIT, 0.0);
 
@@ -288,14 +289,14 @@ public final class WeaponAbilityListener implements Listener {
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.5f, 1.5f);
-        cooldowns.setCooldown(uid, CD_HARMONY, 500L);
+        cooldowns.setCooldown(uid, CD_HARMONY, 1000L);
     }
 
     // ═══ HARMONY WAND — Heal Beam (Sneak+RC) ════════════════════════════════
 
     private void fireHarmonyHealBeam(Player player) {
         UUID uid = player.getUniqueId();
-        if (cooldowns.isOnCooldown(uid, CD_HARMONY)) return;
+        if (cooldowns.isOnCooldown(uid, CD_HARMONY_HEAL)) return;
 
         LivingEntity hit = fireParticleBeam(player, Particle.HEART, 0.0);
 
@@ -307,7 +308,7 @@ public final class WeaponAbilityListener implements Listener {
         // Hitting a non-player entity with the heal beam has no effect
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.8f);
-        cooldowns.setCooldown(uid, CD_HARMONY, 500L);
+        cooldowns.setCooldown(uid, CD_HARMONY, 2000L);
     }
 
     // ═══ PARTICLE BEAM UTILITY ═══════════════════════════════════════════════
