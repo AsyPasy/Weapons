@@ -289,7 +289,7 @@ public final class WeaponAbilityListener implements Listener {
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.5f, 1.5f);
-        cooldowns.setCooldown(uid, CD_HARMONY, 1000L);
+        cooldowns.setCooldown(uid, CD_HARMONY_DMG, 1000L);
     }
 
     // ═══ HARMONY WAND — Heal Beam (Sneak+RC) ════════════════════════════════
@@ -308,7 +308,7 @@ public final class WeaponAbilityListener implements Listener {
         // Hitting a non-player entity with the heal beam has no effect
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.8f);
-        cooldowns.setCooldown(uid, CD_HARMONY, 2000L);
+        cooldowns.setCooldown(uid, CD_HARMONY_HEAL, 2000L);
     }
 
     // ═══ PARTICLE BEAM UTILITY ═══════════════════════════════════════════════
