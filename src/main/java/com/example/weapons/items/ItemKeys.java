@@ -12,6 +12,8 @@ public final class ItemKeys {
     /** Identifies which custom weapon an ItemStack is. Value: WeaponType#getId() */
     public final NamespacedKey WEAPON_ID;
 
+    public final NamespacedKey COMPACTED_IRON_BLOCK;
+
     // ── Projectile tags (stored on Arrow/Snowball entities via PDC) ──────────
     /** Which weapon fired this projectile: "arcanist" or "harmony" */
     public final NamespacedKey PROJECTILE_TYPE;
@@ -25,5 +27,6 @@ public final class ItemKeys {
         PROJECTILE_TYPE    = new NamespacedKey(plugin, "proj_type");
         PROJECTILE_SHOOTER = new NamespacedKey(plugin, "proj_shooter");
         PROJECTILE_DAMAGE  = new NamespacedKey(plugin, "proj_damage");
+        COMPACTED_IRON_BLOCK = new NamespacedKey(plugin, "compacted_iron_block");
     }
 }
