@@ -44,6 +44,11 @@ public class ItemBuilder {
         meta.addItemFlags(flags);
         return this;
     }
+    
+    public ItemBuilder maxStackSize(int size) {
+        meta.setMaxStackSize(size);
+        return this;
+   }
 
     public ItemBuilder unbreakable(boolean val) {
         meta.setUnbreakable(val);
