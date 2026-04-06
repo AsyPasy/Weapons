@@ -193,13 +193,14 @@ public final class ShadowGhoulManager {
     }
 
     private ItemStack buildSkull() {
-        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) skull.getItemMeta();
-        meta.setOwningPlayer(Bukkit.getOfflinePlayer(
-            UUID.fromString("161c7d32-dd90-4b31-81a0-d9afe660565a")));
-        skull.setItemMeta(meta);
-        return skull;
-    }
+    ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+    SkullMeta meta = (SkullMeta) skull.getItemMeta();
+    org.bukkit.profile.PlayerProfile profile = plugin.getServer()
+        .createPlayerProfile(UUID.fromString("161c7d32-dd90-4b31-81a0-d9afe660565a"), "ShadowGhoul");
+    meta.setOwnerProfile(profile);
+    skull.setItemMeta(meta);
+    return skull;
+}
 
     private ItemStack coloredLeather(Material material) {
         ItemStack item = new ItemStack(material);
