@@ -1,17 +1,20 @@
 package com.example.weapons.bosses;
 
-import com.example.weapons.WeaponsPlugin;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.inventory.ItemStack;
+import java.util.Random;
 
 import java.util.Random;
 
@@ -27,29 +30,37 @@ public final class ShadowGhoulListener implements Listener {
         this.manager = plugin.getShadowGhoulManager();
         this.items   = plugin.getBossItems();
     }
+@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+public void onEndermanDeath(EntityDeathEvent event) {
+    if (event.getEntityType() != EntityType.ENDERMAN) return;
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    public void onCreatureSpawn(CreatureSpawnEvent event) {
-        if (event.getEntityType() != EntityType.ZOMBIE) return;
-        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
+    // Strictly The End only — overworld and nether are hard-blocked
+    if (event.getEntity().getWorld().getEnvironment() != World.Environment.THE_END) return;
 
-        World world = event.getLocation().getWorld();
-        if (world == null) return;
+    Location deathLoc = event.getEntity().getLocation();
 
-        // Night only
-        long time = world.getTime();
-        if (time < 13000 || time > 23000) return;
+    // 1/30 chance: drop 1–3 Assassin's Bones
+    if (rng.nextInt(30) == 0) {
+        ItemStack bone = items.buildAssassinsBone();
+        bone.setAmount(rng.nextInt(3) + 1);
+        event.getDrops().add(bone);
+    }
 
-        // Dark Forest biome only
-        Biome biome = event.getLocation().getBlock().getBiome();
-        if (biome != Biome.DARK_FOREST) return;
+    // 1/80 chance: spawn a Shadow Ghoul
+    if (rng.nextInt(80) != 0) return;
 
-        // 1/40 chance
-        if (rng.nextInt(40) != 0) return;
+    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+        manager.spawn(deathLoc);
 
-        event.setCancelled(true);
-        org.bukkit.Bukkit.getScheduler().runTask(plugin,
-            () -> manager.spawn(event.getLocation()));
+        Component announcement = Component.text("☠ A Shadow Ghoul has emerged from the void!", NamedTextColor.DARK_PURPLE)
+            .decoration(TextDecoration.BOLD, true)
+            .decoration(TextDecoration.ITALIC, false);
+
+        for (Player nearby : deathLoc.getNearbyEntitiesByType(Player.class, 10.0)) {
+            nearby.sendMessage(announcement);
+        }
+    });
+}
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
