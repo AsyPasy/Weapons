@@ -271,7 +271,7 @@ public final class WeaponAbilityListener implements Listener {
         if (cooldowns.isOnCooldown(uid, CD_ASSASSIN)) { sendCD(player, cooldowns.getRemainingSeconds(uid, CD_ASSASSIN)); return; }
         if (state.isShadowInvisible(uid)) { player.sendActionBar(Component.text("☠ Already in shadow!", NamedTextColor.YELLOW)); return; }
         state.activateShadow(player);
-        cooldowns.setCooldown(uid, CD_ASSASSIN, 10_000L);
+        cooldowns.setCooldown(uid, CD_ASSASSIN, 45_000L);
     }
 
     // ═══ HARMONY WAND — Damage Beam (RC) ════════════════════════════════════
