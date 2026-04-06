@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,37 +27,21 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Handles PlayerInteractEvent (right-click) for all 7 custom weapon abilities.
- *
- *  Greatsword       → Reflective Guard (30 s CD)
- *  Dominican Axe    → Ground Smash 20 dmg AOE (10 s CD)
- *  Arcanist Staff   → Flame particle beam 4 dmg (0.5 s shot CD)
- *                      Sneak+RC: Charged Shot — next beam deals 25 dmg (30 s CD)
- *  Archmage's Wand  → Arcane particle beam 8 dmg (0.5 s shot CD)
- *                      Sneak+RC: Arcane Burst — knockback + 10 % heal (3 charges → 90 s)
- *  Shadowblade      → Shadowstep dash (10 s CD)
- *  Assassin's Blade → The Shadow invis (10 s CD)
- *  Harmony Wand     → RC: damage beam 4 HP×3 | Sneak+RC: heal beam 4 HP×3 (0.5 s CD)
- *
- * ALL wand shots are pure particle ray-casts — no projectile entities spawned.
- */
 public final class WeaponAbilityListener implements Listener {
 
-    // ── Cooldown keys ─────────────────────────────────────────────────────────
-    private static final String CD_GREATSWORD       = "greatsword";
-    private static final String CD_DOMINICAN        = "dominican_axe";
-    private static final String CD_ARCANIST_CHARGE  = "arcanist_charge";   // charged-shot CD
-    private static final String CD_ARCANIST_SHOT    = "arcanist_shot";     // 0.5 s per shot
-    private static final String CD_ARCHMAGE_SHOT    = "archmage_shot";     // 0.5 s per shot
-    private static final String CD_SHADOWBLADE      = "shadowblade";
-    private static final String CD_ASSASSIN         = "assassins_blade";
-    private static final String CD_HARMONY_DMG  = "harmony_dmg";   // 1s
-    private static final String CD_HARMONY_HEAL = "harmony_heal";  // 2s
+    private static final String CD_GREATSWORD      = "greatsword";
+    private static final String CD_DOMINICAN       = "dominican_axe";
+    private static final String CD_ARCANIST_CHARGE = "arcanist_charge";
+    private static final String CD_ARCANIST_SHOT   = "arcanist_shot";
+    private static final String CD_ARCHMAGE_SHOT   = "archmage_shot";
+    private static final String CD_SHADOWBLADE     = "shadowblade";
+    private static final String CD_ASSASSIN        = "assassins_blade";
+    private static final String CD_HARMONY_DMG     = "harmony_dmg";
+    private static final String CD_HARMONY_HEAL    = "harmony_heal";
 
     private final WeaponsPlugin      plugin;
-    private final ItemKeys            keys;
-    private final CooldownManager    cooldowns;
+    private final ItemKeys           keys;
+    private final CooldownManager   cooldowns;
     private final WeaponStateManager state;
 
     public WeaponAbilityListener(WeaponsPlugin plugin) {
@@ -99,7 +84,7 @@ public final class WeaponAbilityListener implements Listener {
         }
     }
 
-    // ═══ GREATSWORD — Reflective Guard ═══════════════════════════════════════
+    // ═══ GREATSWORD ══════════════════════════════════════════════════════════
 
     private void activateReflectShield(Player player) {
         UUID uid = player.getUniqueId();
@@ -109,7 +94,7 @@ public final class WeaponAbilityListener implements Listener {
         cooldowns.setCooldown(uid, CD_GREATSWORD, 30_000L);
     }
 
-    // ═══ DOMINICAN AXE — Ground Smash ════════════════════════════════════════
+    // ═══ DOMINICAN AXE ═══════════════════════════════════════════════════════
 
     private void activateGroundSmash(Player player) {
         UUID uid = player.getUniqueId();
@@ -120,7 +105,6 @@ public final class WeaponAbilityListener implements Listener {
             if (entity.equals(player)) continue;
             Vector kb = entity.getLocation().toVector().subtract(epicentre.toVector()).setY(0.5).normalize().multiply(2.0);
             entity.setVelocity(kb);
-            // Ability damage — bypass weapon-damage override
             state.addAbilityBypass(uid);
             entity.damage(20.0, player);
             state.removeAbilityBypass(uid);
@@ -134,7 +118,7 @@ public final class WeaponAbilityListener implements Listener {
         cooldowns.setCooldown(uid, CD_DOMINICAN, 10_000L);
     }
 
-    // ═══ ARCANIST STAFF — Charged Shot (Sneak+RC) ════════════════════════════
+    // ═══ ARCANIST STAFF ══════════════════════════════════════════════════════
 
     private void activateChargedShot(Player player) {
         UUID uid = player.getUniqueId();
@@ -144,25 +128,23 @@ public final class WeaponAbilityListener implements Listener {
         cooldowns.setCooldown(uid, CD_ARCANIST_CHARGE, 30_000L);
         player.getWorld().spawnParticle(Particle.FLAME, player.getLocation().add(0, 1, 0), 30, 0.4, 0.4, 0.4, 0.05);
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.5f);
-        player.sendActionBar(Component.text("✦ Charged Shot primed! Fire when ready.", NamedTextColor.AQUA));
+        player.sendActionBar(Component.text("✦ Charged Shot primed!", NamedTextColor.AQUA));
     }
-
-    // ═══ ARCANIST STAFF — Flame Particle Beam (RC) ═══════════════════════════
 
     private void fireArcanistBeam(Player player) {
         UUID uid = player.getUniqueId();
-        if (cooldowns.isOnCooldown(uid, CD_ARCANIST_SHOT)) return;   // silent — 0.5 s is fast
+        if (cooldowns.isOnCooldown(uid, CD_ARCANIST_SHOT)) return;
 
         boolean charged = state.hasChargedShot(uid);
         double  damage  = charged ? 25.0 : 4.0;
         if (charged) state.setChargedShot(uid, false);
 
         LivingEntity hit = fireParticleBeam(player, Particle.FLAME, 0.02);
-
         if (hit != null) {
             state.addAbilityBypass(uid);
             hit.damage(damage, player);
             state.removeAbilityBypass(uid);
+            cancelKnockback(hit);
             hit.getWorld().playSound(hit.getLocation(), Sound.ENTITY_BLAZE_HURT, 0.7f, 1.4f);
         }
 
@@ -171,33 +153,29 @@ public final class WeaponAbilityListener implements Listener {
         cooldowns.setCooldown(uid, CD_ARCANIST_SHOT, 500L);
     }
 
-    // ═══ ARCHMAGE'S WAND — Arcane Particle Beam (RC) ════════════════════════
+    // ═══ ARCHMAGE'S WAND ═════════════════════════════════════════════════════
 
     private void fireArcmageBeam(Player player) {
         UUID uid = player.getUniqueId();
         if (cooldowns.isOnCooldown(uid, CD_ARCHMAGE_SHOT)) return;
 
         LivingEntity hit = fireParticleBeam(player, Particle.END_ROD, 0.0);
-
         if (hit != null) {
             state.addAbilityBypass(uid);
             hit.damage(8.0, player);
             state.removeAbilityBypass(uid);
-            hit.getWorld().spawnParticle(Particle.PORTAL,
-                hit.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.2);
+            cancelKnockback(hit);
+            hit.getWorld().spawnParticle(Particle.PORTAL, hit.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.2);
         }
 
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_AMBIENT, 0.5f, 1.8f);
         cooldowns.setCooldown(uid, CD_ARCHMAGE_SHOT, 500L);
     }
 
-    // ═══ ARCHMAGE'S WAND — Arcane Burst (Sneak+RC) ═══════════════════════════
-
     private void activateArcaneBurst(Player player) {
         UUID uid = player.getUniqueId();
         int charges = state.getArcmageCharges(uid);
         if (charges <= 0) { player.sendActionBar(Component.text("✦ Arcane Burst recharging...", NamedTextColor.RED)); return; }
-
         if (!state.consumeArcmageCharge(player)) return;
         int remaining = state.getArcmageCharges(uid);
 
@@ -208,20 +186,18 @@ public final class WeaponAbilityListener implements Listener {
             entity.setVelocity(kb);
         }
 
-        double healAmount = player.getMaxHealth() * 0.10;   // 10 %
+        double healAmount = player.getMaxHealth() * 0.10;
         player.setHealth(Math.min(player.getMaxHealth(), player.getHealth() + healAmount));
 
-        player.getWorld().spawnParticle(Particle.PORTAL,  origin.add(0,1,0), 100, 1.5, 1.5, 1.5, 0.5);
-        player.getWorld().spawnParticle(Particle.END_ROD, origin,            40,  1.5, 1.5, 1.5, 0.2);
+        player.getWorld().spawnParticle(Particle.PORTAL,  origin.clone().add(0,1,0), 100, 1.5, 1.5, 1.5, 0.5);
+        player.getWorld().spawnParticle(Particle.END_ROD, origin,                     40,  1.5, 1.5, 1.5, 0.2);
         player.getWorld().playSound(origin, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1f,  0.7f);
         player.getWorld().playSound(origin, Sound.BLOCK_BEACON_AMBIENT,         0.8f,1.5f);
 
-        if (remaining > 0) {
-            player.sendActionBar(Component.text("✦ Arcane Burst! (" + remaining + "/3 charges)", NamedTextColor.LIGHT_PURPLE));
-        }
+        if (remaining > 0) player.sendActionBar(Component.text("✦ Arcane Burst! (" + remaining + "/3 charges)", NamedTextColor.LIGHT_PURPLE));
     }
 
-    // ═══ SHADOWBLADE — Shadowstep ════════════════════════════════════════════
+    // ═══ SHADOWBLADE ═════════════════════════════════════════════════════════
 
     private void activateShadowstep(Player player) {
         UUID uid = player.getUniqueId();
@@ -235,7 +211,6 @@ public final class WeaponAbilityListener implements Listener {
         Location dashEnd = origin.clone();
         Set<LivingEntity> hitEntities = new HashSet<>();
 
-        // Trace 5 blocks in 0.5-block steps, stop at solid walls
         for (double step = 0.5; step <= 5.0; step += 0.5) {
             Location check = origin.clone().add(direction.clone().multiply(step));
             if (!check.getBlock().isPassable() || !check.clone().add(0,1,0).getBlock().isPassable()) break;
@@ -249,22 +224,22 @@ public final class WeaponAbilityListener implements Listener {
         dashEnd.setPitch(origin.getPitch());
         player.teleport(dashEnd);
 
-        // Fixed 10 dmg dash impact — bypass so CombatListener doesn't use weapon damage
         for (LivingEntity entity : hitEntities) {
             state.addAbilityBypass(uid);
             entity.damage(10.0, player);
             state.removeAbilityBypass(uid);
+            cancelKnockback(entity);
             state.applyBleeding(entity, player);
         }
 
-        player.getWorld().spawnParticle(Particle.PORTAL, origin.add(0,1,0),   30, 0.4, 0.6, 0.4, 0.4);
+        player.getWorld().spawnParticle(Particle.PORTAL, origin.clone().add(0,1,0), 30, 0.4, 0.6, 0.4, 0.4);
         player.getWorld().spawnParticle(Particle.PORTAL, dashEnd.clone().add(0,1,0), 30, 0.4, 0.6, 0.4, 0.4);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.4f);
         player.sendActionBar(Component.text("☠ Shadowstep! Hit " + hitEntities.size() + " enemy(ies).", NamedTextColor.DARK_PURPLE));
         cooldowns.setCooldown(uid, CD_SHADOWBLADE, 10_000L);
     }
 
-    // ═══ ASSASSIN'S BLADE — The Shadow ═══════════════════════════════════════
+    // ═══ ASSASSIN'S BLADE ════════════════════════════════════════════════════
 
     private void activateShadow(Player player) {
         UUID uid = player.getUniqueId();
@@ -274,52 +249,42 @@ public final class WeaponAbilityListener implements Listener {
         cooldowns.setCooldown(uid, CD_ASSASSIN, 45_000L);
     }
 
-    // ═══ HARMONY WAND — Damage Beam (RC) ════════════════════════════════════
+    // ═══ HARMONY WAND ════════════════════════════════════════════════════════
 
     private void fireHarmonyDamageBeam(Player player) {
         UUID uid = player.getUniqueId();
         if (cooldowns.isOnCooldown(uid, CD_HARMONY_DMG)) return;
 
         LivingEntity hit = fireParticleBeam(player, Particle.CRIT, 0.0);
-
         if (hit != null) {
             state.applyHarmonyDamage(hit, player);
-            hit.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR,
-                hit.getLocation().add(0, 1.5, 0), 6, 0.2, 0.2, 0.2, 0);
+            cancelKnockback(hit);
+            hit.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, hit.getLocation().add(0, 1.5, 0), 6, 0.2, 0.2, 0.2, 0);
         }
 
         player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.5f, 1.5f);
         cooldowns.setCooldown(uid, CD_HARMONY_DMG, 1000L);
     }
 
-    // ═══ HARMONY WAND — Heal Beam (Sneak+RC) ════════════════════════════════
-
     private void fireHarmonyHealBeam(Player player) {
         UUID uid = player.getUniqueId();
         if (cooldowns.isOnCooldown(uid, CD_HARMONY_HEAL)) return;
 
         LivingEntity hit = fireParticleBeam(player, Particle.HEART, 0.0);
-
-        if (hit instanceof Player targetPlayer && !targetPlayer.equals(player)) {
-            state.applyHarmonyHeal(targetPlayer);
-            targetPlayer.getWorld().spawnParticle(Particle.HEART,
-                targetPlayer.getLocation().add(0, 2.3, 0), 6, 0.4, 0.3, 0.4, 0);
+        if (hit instanceof Player) {
+            Player targetPlayer = (Player) hit;
+            if (!targetPlayer.equals(player)) {
+                state.applyHarmonyHeal(targetPlayer);
+                targetPlayer.getWorld().spawnParticle(Particle.HEART, targetPlayer.getLocation().add(0, 2.3, 0), 6, 0.4, 0.3, 0.4, 0);
+            }
         }
-        // Hitting a non-player entity with the heal beam has no effect
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.8f);
         cooldowns.setCooldown(uid, CD_HARMONY_HEAL, 2000L);
     }
 
-    // ═══ PARTICLE BEAM UTILITY ═══════════════════════════════════════════════
+    // ═══ PARTICLE BEAM ═══════════════════════════════════════════════════════
 
-    /**
-     * Traces a ray from the player's eye, 10 blocks long, spawning particles.
-     * Stops at solid blocks. Returns the FIRST LivingEntity hit, or null.
-     *
-     * @param particle visual particle to spawn along the ray
-     * @param extra    particle extra/speed parameter (0 = stationary dots)
-     */
     private LivingEntity fireParticleBeam(Player player, Particle particle, double extra) {
         Location start = player.getEyeLocation();
         Vector   dir   = start.getDirection().normalize();
@@ -328,14 +293,10 @@ public final class WeaponAbilityListener implements Listener {
         for (double d = 0.3; d <= 10.0; d += 0.3) {
             Location point = start.clone().add(dir.clone().multiply(d));
             Block    block = point.getBlock();
-
-            // Stop ray at solid blocks
             if (!block.isPassable()) break;
 
-            // Spawn 2 particles per step for a solid beam appearance
             player.getWorld().spawnParticle(particle, point, 2, 0.05, 0.05, 0.05, extra);
 
-            // Check for the first entity in the beam's path
             if (firstHit == null) {
                 for (LivingEntity entity : point.getWorld().getNearbyLivingEntities(point, 0.6, 0.7, 0.6)) {
                     if (!entity.equals(player)) {
@@ -349,9 +310,22 @@ public final class WeaponAbilityListener implements Listener {
         return firstHit;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
+    // ═══ KNOCKBACK CANCEL ════════════════════════════════════════════════════
+
+    /**
+     * Schedules a velocity reset 1 tick after damage is applied,
+     * effectively cancelling knockback without touching NMS.
+     */
+    private void cancelKnockback(LivingEntity entity) {
+        Vector current = entity.getVelocity().clone();
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (entity.isValid() && !entity.isDead()) {
+                entity.setVelocity(new Vector(current.getX(), entity.getVelocity().getY(), current.getZ()));
+            }
+        }, 1L);
+    }
+
+    // ═══ HELPERS ═════════════════════════════════════════════════════════════
 
     private void sendCD(Player player, long secondsLeft) {
         player.sendActionBar(Component.text("⏱ On cooldown: " + secondsLeft + "s", NamedTextColor.RED));
