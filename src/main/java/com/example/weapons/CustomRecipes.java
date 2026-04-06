@@ -1,5 +1,6 @@
 package com.example.weapons;
 
+import com.example.weapons.bosses.BossItems;
 import com.example.weapons.items.WeaponFactory;
 import com.example.weapons.items.WeaponType;
 import net.kyori.adventure.text.Component;
@@ -30,79 +31,89 @@ public final class CustomRecipes implements Listener {
     private static final String COMPACTED_ID = "compacted_iron_block";
 
     private final WeaponsPlugin plugin;
+    private final BossItems     bossItems;
     private final NamespacedKey compactedKey;
     private final NamespacedKey compactedRecipeKey;
 
-    /** Tracks locations of placed compacted iron blocks (in-memory). */
     private final Set<Location> placedCompacted = new HashSet<>();
 
     public CustomRecipes(WeaponsPlugin plugin) {
         this.plugin             = plugin;
+        this.bossItems          = plugin.getBossItems();
         this.compactedKey       = new NamespacedKey(plugin, "compacted_iron_block");
         this.compactedRecipeKey = new NamespacedKey(plugin, "compacted_iron_block_recipe");
     }
 
     public void register() {
-        // ── Compacted Iron Block: 3x3 iron blocks ─────────────────────────
         ShapedRecipe compactedRecipe = new ShapedRecipe(compactedRecipeKey, buildCompacted());
         compactedRecipe.shape("III", "III", "III");
         compactedRecipe.setIngredient('I', Material.IRON_BLOCK);
         plugin.getServer().addRecipe(compactedRecipe);
 
-        // ── Greatsword + reverse compacted recipe via PrepareItemCraftEvent ─
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  CRAFTING LOGIC
+    //  CRAFTING
     // ─────────────────────────────────────────────────────────────────────────
 
     @EventHandler
     public void onPrepare(PrepareItemCraftEvent event) {
         CraftingInventory inv = event.getInventory();
-        ItemStack[] matrix = inv.getMatrix();
+        ItemStack[] m = inv.getMatrix();
 
-        // ── Reverse: 1 compacted iron block → 9 iron blocks ──────────────
-        int filledSlots = 0;
-        ItemStack onlyItem = null;
-        for (ItemStack s : matrix) {
-            if (s != null && s.getType() != Material.AIR) {
-                filledSlots++;
-                onlyItem = s;
-            }
-        }
-        if (filledSlots == 1 && isCompacted(onlyItem)) {
+        // ── Reverse: 1 compacted → 9 iron blocks ─────────────────────────
+        int filled = 0;
+        ItemStack only = null;
+        for (ItemStack s : m) { if (s != null && s.getType() != Material.AIR) { filled++; only = s; } }
+        if (filled == 1 && isCompacted(only)) {
             inv.setResult(new ItemStack(Material.IRON_BLOCK, 9));
             return;
         }
 
-        // ── Greatsword pattern ────────────────────────────────────────────
+        // ── Greatsword ────────────────────────────────────────────────────
         // [ ][C][ ]
         // [S][C][S]
         // [ ][s][ ]
-        // C = compacted iron, S = shield, s = stick
-        if (!isEmpty(matrix[0])) return;
-        if (!isCompacted(matrix[1])) return;
-        if (!isEmpty(matrix[2])) return;
-        if (!isShield(matrix[3])) return;
-        if (!isCompacted(matrix[4])) return;
-        if (!isShield(matrix[5])) return;
-        if (!isEmpty(matrix[6])) return;
-        if (!isStick(matrix[7])) return;
-        if (!isEmpty(matrix[8])) return;
+        if (isEmpty(m[0]) && isCompacted(m[1]) && isEmpty(m[2]) &&
+            isShield(m[3]) && isCompacted(m[4]) && isShield(m[5]) &&
+            isEmpty(m[6]) && isStick(m[7]) && isEmpty(m[8])) {
+            inv.setResult(new WeaponFactory(plugin).create(WeaponType.GREATSWORD));
+            return;
+        }
 
-        inv.setResult(new WeaponFactory(plugin).create(WeaponType.GREATSWORD));
+        // ── Shadowblade ───────────────────────────────────────────────────
+        // [ ][Sh][ ]
+        // [ ][Sh][ ]
+        // [ ][St][ ]
+        // Sh = Shadow, St = stick
+        if (isEmpty(m[0]) && isShadow(m[1]) && isEmpty(m[2]) &&
+            isEmpty(m[3]) && isShadow(m[4]) && isEmpty(m[5]) &&
+            isEmpty(m[6]) && isStick(m[7]) && isEmpty(m[8])) {
+            inv.setResult(new WeaponFactory(plugin).create(WeaponType.SHADOWBLADE));
+            return;
+        }
+
+        // ── Assassin's Blade ──────────────────────────────────────────────
+        // [ ][GI][ ]
+        // [AB][Sh][AB]
+        // [ ][AB][ ]
+        // GI = gold ingot, AB = assassin's bone, Sh = shadow
+        if (isEmpty(m[0]) && isGoldIngot(m[1]) && isEmpty(m[2]) &&
+            isAssassinsBone(m[3]) && isShadow(m[4]) && isAssassinsBone(m[5]) &&
+            isEmpty(m[6]) && isAssassinsBone(m[7]) && isEmpty(m[8])) {
+            inv.setResult(new WeaponFactory(plugin).create(WeaponType.ASSASSINS_BLADE));
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  BLOCK PLACE / BREAK — return compacted block on break
+    //  PLACE / BREAK — return compacted block
     // ─────────────────────────────────────────────────────────────────────────
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (isCompacted(event.getItemInHand())) {
+        if (isCompacted(event.getItemInHand()))
             placedCompacted.add(event.getBlock().getLocation());
-        }
     }
 
     @EventHandler
@@ -115,7 +126,7 @@ public final class CustomRecipes implements Listener {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  ITEM BUILDER
+    //  COMPACTED IRON BLOCK ITEM
     // ─────────────────────────────────────────────────────────────────────────
 
     public ItemStack buildCompacted() {
@@ -126,7 +137,7 @@ public final class CustomRecipes implements Listener {
         meta.lore(List.of(
             Component.text("Compressed iron.", NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false),
-            Component.text("Place in crafting to revert to 9 iron blocks.", NamedTextColor.DARK_GRAY)
+            Component.text("Place in crafting alone to revert to 9 iron blocks.", NamedTextColor.DARK_GRAY)
                 .decoration(TextDecoration.ITALIC, false)
         ));
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
@@ -138,17 +149,19 @@ public final class CustomRecipes implements Listener {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  HELPERS
+    //  MATCHERS
     // ─────────────────────────────────────────────────────────────────────────
 
     public boolean isCompacted(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
-        return COMPACTED_ID.equals(item.getItemMeta()
-            .getPersistentDataContainer()
+        return COMPACTED_ID.equals(item.getItemMeta().getPersistentDataContainer()
             .get(compactedKey, PersistentDataType.STRING));
     }
 
-    private boolean isEmpty(ItemStack i)  { return i == null || i.getType() == Material.AIR; }
-    private boolean isShield(ItemStack i) { return i != null && i.getType() == Material.SHIELD; }
-    private boolean isStick(ItemStack i)  { return i != null && i.getType() == Material.STICK; }
+    private boolean isShadow(ItemStack item)        { return bossItems.isShadow(item); }
+    private boolean isAssassinsBone(ItemStack item) { return bossItems.isAssassinsBone(item); }
+    private boolean isEmpty(ItemStack i)            { return i == null || i.getType() == Material.AIR; }
+    private boolean isShield(ItemStack i)           { return i != null && i.getType() == Material.SHIELD; }
+    private boolean isStick(ItemStack i)            { return i != null && i.getType() == Material.STICK; }
+    private boolean isGoldIngot(ItemStack i)        { return i != null && i.getType() == Material.GOLD_INGOT; }
 }
