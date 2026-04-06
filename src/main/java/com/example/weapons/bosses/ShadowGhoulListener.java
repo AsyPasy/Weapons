@@ -1,5 +1,6 @@
 package com.example.weapons.bosses;
 
+import com.example.weapons.WeaponsPlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -10,11 +11,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.inventory.ItemStack;
-import java.util.Random;
 
 import java.util.Random;
 
@@ -30,44 +30,50 @@ public final class ShadowGhoulListener implements Listener {
         this.manager = plugin.getShadowGhoulManager();
         this.items   = plugin.getBossItems();
     }
-@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-public void onEndermanDeath(EntityDeathEvent event) {
-    if (event.getEntityType() != EntityType.ENDERMAN) return;
 
-    // Strictly The End only — overworld and nether are hard-blocked
-    if (event.getEntity().getWorld().getEnvironment() != World.Environment.THE_END) return;
+    // ── Enderman killed in The End → possible ghoul spawn + bone drop ────────
 
-    Location deathLoc = event.getEntity().getLocation();
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onEndermanDeath(EntityDeathEvent event) {
+        if (event.getEntityType() != EntityType.ENDERMAN) return;
 
-    // 1/30 chance: drop 1–3 Assassin's Bones
-    if (rng.nextInt(30) == 0) {
-        ItemStack bone = items.buildAssassinsBone();
-        bone.setAmount(rng.nextInt(3) + 1);
-        event.getDrops().add(bone);
-    }
+        // Strictly The End only — overworld and nether are hard-blocked
+        if (event.getEntity().getWorld().getEnvironment() != World.Environment.THE_END) return;
 
-    // 1/80 chance: spawn a Shadow Ghoul
-    if (rng.nextInt(80) != 0) return;
+        Location deathLoc = event.getEntity().getLocation();
 
-    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
-        manager.spawn(deathLoc);
-
-        Component announcement = Component.text("☠ A Shadow Ghoul has emerged from the void!", NamedTextColor.DARK_PURPLE)
-            .decoration(TextDecoration.BOLD, true)
-            .decoration(TextDecoration.ITALIC, false);
-
-        for (Player nearby : deathLoc.getNearbyEntitiesByType(Player.class, 10.0)) {
-            nearby.sendMessage(announcement);
+        // 1/30 chance: drop 1–3 Assassin's Bones
+        if (rng.nextInt(30) == 0) {
+            ItemStack bone = items.buildAssassinsBone();
+            bone.setAmount(rng.nextInt(3) + 1);
+            event.getDrops().add(bone);
         }
-    });
-}
+
+        // 1/80 chance: spawn a Shadow Ghoul
+        if (rng.nextInt(80) != 0) return;
+
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+            manager.spawn(deathLoc);
+
+            Component announcement = Component.text("☠ A Shadow Ghoul has emerged from the void!", NamedTextColor.DARK_PURPLE)
+                .decoration(TextDecoration.BOLD, true)
+                .decoration(TextDecoration.ITALIC, false);
+
+            for (Player nearby : deathLoc.getNearbyEntitiesByType(Player.class, 10.0)) {
+                nearby.sendMessage(announcement);
+            }
+        });
     }
+
+    // ── Ghoul melee damage is fixed at 12 ────────────────────────────────────
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onGhoulAttack(EntityDamageByEntityEvent event) {
         if (!manager.isGhoul(event.getDamager())) return;
         event.setDamage(12.0);
     }
+
+    // ── Ghoul death drops ─────────────────────────────────────────────────────
 
     @EventHandler
     public void onGhoulDeath(EntityDeathEvent event) {
@@ -81,16 +87,16 @@ public void onEndermanDeath(EntityDeathEvent event) {
 
         // 1/25 chance: drop 1-2 Assassin's Bones
         if (rng.nextInt(25) == 0) {
-            int amount = rng.nextInt(3) + 1;
+            int amount = rng.nextInt(2) + 1;
             ItemStack bone = items.buildAssassinsBone();
             bone.setAmount(amount);
             event.getDrops().add(bone);
         }
 
-        // Remove the TextDisplay passenger so it does not linger in the world.
-        manager.removeDisplayPassengers((org.bukkit.entity.Zombie) event.getEntity());
         manager.stopAI(event.getEntity().getUniqueId());
     }
+
+    // ── Prevent ghoul from converting to drowned ─────────────────────────────
 
     @EventHandler
     public void onEntityTransform(EntityTransformEvent event) {
@@ -100,3 +106,4 @@ public void onEndermanDeath(EntityDeathEvent event) {
         }
     }
 }
+
