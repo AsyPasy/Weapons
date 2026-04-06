@@ -1,5 +1,6 @@
 package com.example.weapons.bosses;
 
+import org.bukkit.entity.EntityType;
 import com.example.weapons.WeaponsPlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
