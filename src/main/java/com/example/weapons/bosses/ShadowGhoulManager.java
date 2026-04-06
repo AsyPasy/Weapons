@@ -74,7 +74,8 @@ public final class ShadowGhoulManager {
             eq.setBootsDropChance(0f);
             eq.setItemInMainHandDropChance(0f);
             zombie.setCanPickupItems(false);
-            zombie.setConversionTime(-1); // prevent drowned conversion
+            zombie.setConversionTime(-1);
+            forceNameVisible(zombie);// prevent drowned conversion
         }, 1L);
 
         startAI(zombie);
