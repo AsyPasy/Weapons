@@ -1,5 +1,8 @@
 package com.example.weapons;
 
+import com.example.weapons.bosses.BossItems;
+import com.example.weapons.bosses.ShadowGhoulListener;
+import com.example.weapons.bosses.ShadowGhoulManager;
 import com.example.weapons.command.WeaponCommand;
 import com.example.weapons.items.ItemKeys;
 import com.example.weapons.listeners.ProjectileListener;
@@ -14,52 +17,44 @@ import java.util.Objects;
 public final class WeaponsPlugin extends JavaPlugin {
 
     private static WeaponsPlugin instance;
-    private ItemKeys itemKeys;
-    private CooldownManager cooldownManager;
+    private ItemKeys           itemKeys;
+    private CooldownManager    cooldownManager;
     private WeaponStateManager stateManager;
+    private ShadowGhoulManager shadowGhoulManager;
+    private BossItems          bossItems;
 
     @Override
     public void onEnable() {
-        new CustomRecipes(this).register();
         instance = this;
 
-        // Initialize key registry first — requires plugin instance
-        this.itemKeys = new ItemKeys(this);
-        this.cooldownManager = new CooldownManager();
-        this.stateManager = new WeaponStateManager(this);
+        this.itemKeys           = new ItemKeys(this);
+        this.cooldownManager    = new CooldownManager();
+        this.stateManager       = new WeaponStateManager(this);
+        this.bossItems          = new BossItems(this);
+        this.shadowGhoulManager = new ShadowGhoulManager(this);
 
-        // Register listeners
         getServer().getPluginManager().registerEvents(new WeaponCombatListener(this), this);
         getServer().getPluginManager().registerEvents(new WeaponAbilityListener(this), this);
         getServer().getPluginManager().registerEvents(new ProjectileListener(this), this);
+        getServer().getPluginManager().registerEvents(new ShadowGhoulListener(this), this);
 
-        // Register commands
+        new CustomRecipes(this).register();
+
         Objects.requireNonNull(getCommand("weapon")).setExecutor(new WeaponCommand(this));
 
-        getLogger().info("WeaponsPlugin v1.0.0 enabled — 7 custom weapons loaded.");
+        getLogger().info("WeaponsPlugin enabled.");
     }
 
     @Override
     public void onDisable() {
-        if (stateManager != null) {
-            stateManager.cleanup();
-        }
-        getLogger().info("WeaponsPlugin disabled.");
+        if (stateManager       != null) stateManager.cleanup();
+        if (shadowGhoulManager != null) shadowGhoulManager.stopAll();
     }
 
-    public static WeaponsPlugin getInstance() {
-        return instance;
-    }
-
-    public ItemKeys getItemKeys() {
-        return itemKeys;
-    }
-
-    public CooldownManager getCooldownManager() {
-        return cooldownManager;
-    }
-
-    public WeaponStateManager getStateManager() {
-        return stateManager;
-    }
+    public static WeaponsPlugin getInstance()           { return instance; }
+    public ItemKeys            getItemKeys()            { return itemKeys; }
+    public CooldownManager     getCooldownManager()     { return cooldownManager; }
+    public WeaponStateManager  getStateManager()        { return stateManager; }
+    public ShadowGhoulManager  getShadowGhoulManager()  { return shadowGhoulManager; }
+    public BossItems           getBossItems()           { return bossItems; }
 }
