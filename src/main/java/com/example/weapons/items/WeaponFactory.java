@@ -141,7 +141,7 @@ public final class WeaponFactory {
                 abilityTitle("Shadowstep"),
                 hint("Right-Click to dash 5 blocks forward."),
                 hint("Damages enemies in your path."),
-                hint("Applies Bleeding: 1 dmg/sec for 10s."),
+                hint("Applies Bleeding: 1 dmg/sec for 7s."),
                 cooldown("10 seconds")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
@@ -162,8 +162,8 @@ public final class WeaponFactory {
                 stat("Critical Hit", "9"),
                 Component.empty(),
                 abilityTitle("The Shadow"),
-                hint("Right-Click to vanish for 5 seconds."),
-                hint("Grants Speed II. Enemies cannot"),
+                hint("Right-Click to vanish for 10 seconds."),
+                hint("Grants Speed III. Enemies cannot"),
                 hint("see or attack you."),
                 hint("Natural healing disabled (potions work)."),
                 cooldown("10 seconds")
