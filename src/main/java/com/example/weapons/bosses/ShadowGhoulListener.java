@@ -54,7 +54,13 @@ public final class ShadowGhoulListener implements Listener {
         org.bukkit.Bukkit.getScheduler().runTask(plugin,
             () -> manager.spawn(event.getLocation()));
     }
-
+        @EventHandler
+public void onEntityTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+    if (event.getTransformReason() == org.bukkit.event.entity.EntityTransformEvent.TransformReason.DROWNED
+        && manager.isGhoul(event.getEntity())) {
+        event.setCancelled(true);
+    }
+}
     // ─────────────────────────────────────────────────────────────────────────
     //  DAMAGE — always 12, regardless of armor or effects
     // ─────────────────────────────────────────────────────────────────────────
@@ -87,6 +93,13 @@ public final class ShadowGhoulListener implements Listener {
             bone.setAmount(amount);
             event.getDrops().add(bone);
         }
+    @EventHandler
+public void onEntityTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+    if (event.getTransformReason() == org.bukkit.event.entity.EntityTransformEvent.TransformReason.DROWNED
+        && manager.isGhoul(event.getEntity())) {
+        event.setCancelled(true);
+    }
+}
 
         manager.stopAI(event.getEntity().getUniqueId());
     }
