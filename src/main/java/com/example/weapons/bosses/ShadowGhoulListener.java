@@ -2,12 +2,11 @@ package com.example.weapons.bosses;
 
 import com.example.weapons.WeaponsPlugin;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -37,10 +36,16 @@ public final class ShadowGhoulListener implements Listener {
         World world = event.getLocation().getWorld();
         if (world == null) return;
 
+        // Night only
         long time = world.getTime();
         if (time < 13000 || time > 23000) return;
 
-        if (rng.nextInt(120) != 0) return;
+        // Dark Forest biome only
+        Biome biome = event.getLocation().getBlock().getBiome();
+        if (biome != Biome.DARK_FOREST) return;
+
+        // 1/60 chance
+        if (rng.nextInt(60) != 0) return;
 
         event.setCancelled(true);
         org.bukkit.Bukkit.getScheduler().runTask(plugin,
@@ -60,10 +65,12 @@ public final class ShadowGhoulListener implements Listener {
         event.getDrops().clear();
         event.setDroppedExp(0);
 
+        // Always drop 1 Shadow
         event.getDrops().add(items.buildShadow());
 
-        if (rng.nextInt(30) == 0) {
-            int amount = rng.nextInt(3) + 1;
+        // 1/25 chance: drop 1-2 Assassin's Bones
+        if (rng.nextInt(25) == 0) {
+            int amount = rng.nextInt(2) + 1;
             ItemStack bone = items.buildAssassinsBone();
             bone.setAmount(amount);
             event.getDrops().add(bone);
