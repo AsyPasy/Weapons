@@ -211,7 +211,15 @@ public final class ShadowGhoulManager {
 
         // Shift the label above the passenger mount point so it floats
         // cleanly above the ghoul's skull helmet (~0.45 blocks up).
-        display.setTranslation(new org.joml.Vector3f(0f, 0.45f, 0f));
+        org.bukkit.util.Transformation transform = display.getTransformation();
+
+         // Apply a new transformation with the updated translation
+         display.setTransformation(new org.bukkit.util.Transformation(
+          new org.joml.Vector3f(0f, 0.45f, 0f),
+         transform.getLeftRotation(),
+         transform.getScale(),
+         transform.getRightRotation()
+     ));
 
         // Not a persistent entity — managed entirely by this plugin.
         display.setPersistent(false);
