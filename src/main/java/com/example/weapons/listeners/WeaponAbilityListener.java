@@ -313,16 +313,21 @@ public final class WeaponAbilityListener implements Listener {
     // ═══ KNOCKBACK CANCEL ════════════════════════════════════════════════════
 
     /**
-     * Schedules a velocity reset 1 tick after damage is applied,
-     * effectively cancelling knockback without touching NMS.
+     * Strictly zeroes horizontal (XZ) velocity on the very next server task,
+     * which runs after the current tick's physics — including knockback — have
+     * been applied.  Vertical velocity (gravity / jump arc) is preserved so the
+     * entity doesn't snap to the ground unnaturally.
+     *
+     * Using runTask (0-tick delay) is critical: the old runTaskLater(1L) ran one
+     * full tick too late, meaning the already-applied knockback impulse had
+     * already moved the entity before it was cleared.
      */
     private void cancelKnockback(LivingEntity entity) {
-        Vector current = entity.getVelocity().clone();
-        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
             if (entity.isValid() && !entity.isDead()) {
-                entity.setVelocity(new Vector(current.getX(), entity.getVelocity().getY(), current.getZ()));
+                entity.setVelocity(new Vector(0, entity.getVelocity().getY(), 0));
             }
-        }, 1L);
+        });
     }
 
     // ═══ HELPERS ═════════════════════════════════════════════════════════════

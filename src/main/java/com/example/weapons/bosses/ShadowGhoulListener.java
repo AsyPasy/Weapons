@@ -44,8 +44,8 @@ public final class ShadowGhoulListener implements Listener {
         Biome biome = event.getLocation().getBlock().getBiome();
         if (biome != Biome.DARK_FOREST) return;
 
-        // 1/60 chance
-        if (rng.nextInt(60) != 0) return;
+        // 1/40 chance
+        if (rng.nextInt(40) != 0) return;
 
         event.setCancelled(true);
         org.bukkit.Bukkit.getScheduler().runTask(plugin,
@@ -70,12 +70,14 @@ public final class ShadowGhoulListener implements Listener {
 
         // 1/25 chance: drop 1-2 Assassin's Bones
         if (rng.nextInt(25) == 0) {
-            int amount = rng.nextInt(2) + 1;
+            int amount = rng.nextInt(3) + 1;
             ItemStack bone = items.buildAssassinsBone();
             bone.setAmount(amount);
             event.getDrops().add(bone);
         }
 
+        // Remove the TextDisplay passenger so it does not linger in the world.
+        manager.removeDisplayPassengers((org.bukkit.entity.Zombie) event.getEntity());
         manager.stopAI(event.getEntity().getUniqueId());
     }
 

@@ -7,9 +7,12 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -74,8 +77,9 @@ public final class ShadowGhoulManager {
             eq.setBootsDropChance(0f);
             eq.setItemInMainHandDropChance(0f);
             zombie.setCanPickupItems(false);
-            zombie.setConversionTime(-1);
-            forceNameVisible(zombie);// prevent drowned conversion
+            zombie.setConversionTime(-1);  // prevent drowned conversion
+            forceNameVisible(zombie);
+            attachNameDisplay(zombie);
         }, 1L);
 
         startAI(zombie);
@@ -168,14 +172,62 @@ public final class ShadowGhoulManager {
         item.setItemMeta(meta);
         return item;
     }
-private void forceNameVisible(Zombie zombie) {
-    org.bukkit.scoreboard.Scoreboard board = plugin.getServer().getScoreboardManager().getMainScoreboard();
-    org.bukkit.scoreboard.Team team = board.getTeam("shadow_ghoul");
-    if (team == null) {
-        team = board.registerNewTeam("shadow_ghoul");
-        team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
-            org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+    private void forceNameVisible(Zombie zombie) {
+        org.bukkit.scoreboard.Scoreboard board = plugin.getServer().getScoreboardManager().getMainScoreboard();
+        org.bukkit.scoreboard.Team team = board.getTeam("shadow_ghoul");
+        if (team == null) {
+            team = board.registerNewTeam("shadow_ghoul");
+            team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+                org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+        }
+        team.addEntity(zombie);
     }
-    team.addEntity(zombie);
-}
+
+    /**
+     * Attaches a {@link TextDisplay} passenger to the ghoul showing
+     * "Shadow Ghoul" in black bold text.
+     *
+     * A TextDisplay renders independently of the vehicle's Invisibility
+     * potion state, so the label remains visible at all times — unlike
+     * setCustomNameVisible() which hides during invisibility even with a
+     * scoreboard ALWAYS team configured.
+     */
+    private void attachNameDisplay(Zombie zombie) {
+        TextDisplay display = (TextDisplay) zombie.getWorld()
+            .spawnEntity(zombie.getLocation(), EntityType.TEXT_DISPLAY);
+
+        display.text(
+            Component.text("Shadow Ghoul")
+                .color(NamedTextColor.BLACK)
+                .decoration(TextDecoration.BOLD, true)
+                .decoration(TextDecoration.ITALIC, false)
+        );
+
+        // Always face the viewer.
+        display.setBillboard(Display.Billboard.CENTER);
+
+        // Transparent background.
+        display.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+
+        // Shift the label above the passenger mount point so it floats
+        // cleanly above the ghoul's skull helmet (~0.45 blocks up).
+        display.setTranslation(new org.joml.Vector3f(0f, 0.45f, 0f));
+
+        // Not a persistent entity — managed entirely by this plugin.
+        display.setPersistent(false);
+
+        zombie.addPassenger(display);
+    }
+
+    /**
+     * Removes any {@link TextDisplay} passengers before the ghoul despawns
+     * so the label entity does not linger in the world.
+     */
+    public void removeDisplayPassengers(Zombie zombie) {
+        for (Entity passenger : zombie.getPassengers()) {
+            if (passenger instanceof TextDisplay) {
+                passenger.remove();
+            }
+        }
+    }
 }
