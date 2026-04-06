@@ -131,8 +131,8 @@ public final class WeaponStateManager {
         BukkitTask existing = shadowTasks.remove(uid);
         if (existing != null) existing.cancel();
         shadowInvisible.add(uid);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 5 * 20 + 10, 0, false, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 5 * 20 + 10, 1, false, true, true));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20 + 10, 0, false, false, false));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 10 * 20 + 10, 4, false, true, true));
         player.getWorld().spawnParticle(Particle.PORTAL,
             player.getLocation().add(0, 1, 0), 50, 0.4, 0.8, 0.4, 0.3);
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.5f);
@@ -142,11 +142,12 @@ public final class WeaponStateManager {
             shadowTasks.remove(uid);
             if (player.isOnline()) {
                 player.removePotionEffect(PotionEffectType.INVISIBILITY);
+                player.removePotionEffect(PotionEffectType.SPEED);
                 player.getWorld().spawnParticle(Particle.PORTAL,
                     player.getLocation().add(0, 1, 0), 30, 0.4, 0.8, 0.4, 0.3);
                 player.sendActionBar(Component.text("☠ The Shadow — you reappear.", NamedTextColor.GRAY));
             }
-        }, 5L * 20L);
+        }, 10L * 20L);
         shadowTasks.put(uid, task);
     }
 
@@ -164,7 +165,7 @@ public final class WeaponStateManager {
         BukkitTask task = new BukkitRunnable() {
             int pulses = 0;
             @Override public void run() {
-                if (!entity.isValid() || entity.isDead() || pulses >= 10) {
+                if (!entity.isValid() || entity.isDead() || pulses >= 7) {
                     bleedTasks.remove(entityId);
                     cancel(); return;
                 }
