@@ -167,4 +167,14 @@ public final class ShadowGhoulManager {
         item.setItemMeta(meta);
         return item;
     }
+private void forceNameVisible(Zombie zombie) {
+    org.bukkit.scoreboard.Scoreboard board = plugin.getServer().getScoreboardManager().getMainScoreboard();
+    org.bukkit.scoreboard.Team team = board.getTeam("shadow_ghoul");
+    if (team == null) {
+        team = board.registerNewTeam("shadow_ghoul");
+        team.setOption(org.bukkit.scoreboard.Team.Option.NAME_TAG_VISIBILITY,
+            org.bukkit.scoreboard.Team.OptionStatus.ALWAYS);
+    }
+    team.addEntity(zombie);
+}
 }
