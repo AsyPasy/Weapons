@@ -1,8 +1,11 @@
 package com.example.weapons.items;
 
+import com.google.common.collect.HashMultimap;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -17,12 +20,13 @@ import java.util.List;
 public class ItemBuilder {
 
     private final ItemStack item;
-    private final ItemMeta meta;
+    private final ItemMeta  meta;
 
     public ItemBuilder(Material material) {
         this.item = new ItemStack(material);
         this.meta = item.getItemMeta();
-        if (this.meta == null) throw new IllegalArgumentException("Material " + material + " cannot have meta.");
+        if (this.meta == null)
+            throw new IllegalArgumentException("Material " + material + " cannot have meta.");
     }
 
     public ItemBuilder name(Component name) {
@@ -44,11 +48,11 @@ public class ItemBuilder {
         meta.addItemFlags(flags);
         return this;
     }
-    
+
     public ItemBuilder maxStackSize(int size) {
         meta.setMaxStackSize(size);
         return this;
-   }
+    }
 
     public ItemBuilder unbreakable(boolean val) {
         meta.setUnbreakable(val);
@@ -57,6 +61,17 @@ public class ItemBuilder {
 
     public ItemBuilder pdc(NamespacedKey key, String value) {
         meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, value);
+        return this;
+    }
+
+    /**
+     * Replaces the item's default vanilla attribute modifiers with an empty map.
+     * This removes the "When in Main Hand" tooltip that swords and axes show by
+     * default, even when ItemFlag.HIDE_ATTRIBUTES is present — that flag only
+     * hides custom modifiers, not the material's built-in ones.
+     */
+    public ItemBuilder clearAttributes() {
+        meta.setAttributeModifiers(HashMultimap.<Attribute, AttributeModifier>create());
         return this;
     }
 
