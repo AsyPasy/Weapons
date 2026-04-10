@@ -34,7 +34,7 @@ public final class WeaponFactory {
     // RARE
     private ItemStack buildGreatsword() {
         return new ItemBuilder(Material.NETHERITE_SWORD)
-            .name(text("⚔ Greatsword", NamedTextColor.BLUE))
+            .name(name("⚔ Greatsword", "RARE"))
             .lore(List.of(
                 stat("Normal Hit", "7"),
                 stat("Critical Hit", "10"),
@@ -58,7 +58,7 @@ public final class WeaponFactory {
     // EPIC
     private ItemStack buildDominicanAxe() {
         return new ItemBuilder(Material.NETHERITE_AXE)
-            .name(text("⚒ Dominican Axe", NamedTextColor.DARK_PURPLE))
+            .name(name("⚒ Dominican Axe", "EPIC"))
             .lore(List.of(
                 stat("Normal Hit", "10"),
                 stat("Critical Hit", "13"),
@@ -82,7 +82,7 @@ public final class WeaponFactory {
     // UNCOMMON
     private ItemStack buildArcanistStaff() {
         return new ItemBuilder(Material.BLAZE_ROD)
-            .name(text("✦ Arcanist Staff", NamedTextColor.GREEN))
+            .name(name("✦ Arcanist Staff", "UNCOMMON"))
             .lore(List.of(
                 stat("Particle Shot", "4"),
                 Component.empty(),
@@ -110,7 +110,7 @@ public final class WeaponFactory {
     // LEGENDARY
     private ItemStack buildArchmagesWand() {
         return new ItemBuilder(Material.END_ROD)
-            .name(text("✦ Archmage's Wand", NamedTextColor.GOLD))
+            .name(name("✦ Archmage's Wand", "LEGENDARY"))
             .lore(List.of(
                 stat("Particle Shot", "8"),
                 Component.empty(),
@@ -138,7 +138,7 @@ public final class WeaponFactory {
     // VERY RARE
     private ItemStack buildShadowblade() {
         return new ItemBuilder(Material.IRON_SWORD)
-            .name(text("☠ Shadowblade", NamedTextColor.DARK_AQUA))
+            .name(name("☠ Shadowblade", "VERY RARE"))
             .lore(List.of(
                 stat("Normal Hit", "5.6"),
                 stat("Critical Hit", "7"),
@@ -162,7 +162,7 @@ public final class WeaponFactory {
     // LEGENDARY
     private ItemStack buildAssassinsBlade() {
         return new ItemBuilder(Material.GOLDEN_SWORD)
-            .name(text("☠ Assassin's Blade", NamedTextColor.GOLD))
+            .name(name("☠ Assassin's Blade", "LEGENDARY"))
             .lore(List.of(
                 stat("Normal Hit", "7.2"),
                 stat("Critical Hit", "9"),
@@ -187,7 +187,7 @@ public final class WeaponFactory {
     // EPIC
     private ItemStack buildHarmonyWand() {
         return new ItemBuilder(Material.STICK)
-            .name(text("Harmony Wand", NamedTextColor.DARK_PURPLE))
+            .name(name("Harmony Wand", "EPIC"))
             .lore(List.of(
                 ability("Harmony Bolt"),
                 keybind("Right-Click"),
@@ -211,24 +211,49 @@ public final class WeaponFactory {
 
     // ─── Lore helpers ─────────────────────────────────────────────────────────
 
-    /** White item name / rarity tag text. */
-    private Component text(String s, NamedTextColor color) {
-        return Component.text(s, color).decoration(TextDecoration.ITALIC, false);
+    /**
+     * Resolves the rarity label to its NamedTextColor.
+     *   COMMON    → WHITE
+     *   UNCOMMON  → GREEN
+     *   RARE      → BLUE
+     *   VERY RARE → DARK_AQUA  (teal)
+     *   EPIC      → DARK_PURPLE
+     *   LEGENDARY → GOLD       (orange)
+     */
+    private NamedTextColor rarityColor(String rarityLabel) {
+        return switch (rarityLabel) {
+            case "UNCOMMON"  -> NamedTextColor.GREEN;
+            case "RARE"      -> NamedTextColor.BLUE;
+            case "VERY RARE" -> NamedTextColor.DARK_AQUA;
+            case "EPIC"      -> NamedTextColor.DARK_PURPLE;
+            case "LEGENDARY" -> NamedTextColor.GOLD;
+            default          -> NamedTextColor.WHITE; // COMMON
+        };
     }
 
     /**
-     * Stat line — yellow label, green value with +HP suffix.
-     * Example: "⚡ Normal Hit: +7 HP"
+     * Item display name — colored by rarity, no italic.
+     * Example: name("⚔ Greatsword", "RARE") → blue "⚔ Greatsword"
+     */
+    private Component name(String displayName, String rarityLabel) {
+        return Component.text(displayName, rarityColor(rarityLabel))
+            .decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Stat line — gray label, green value.
+     * Example: stat("Normal Hit", "7") → "Normal Hit: +7 HP"
+     *           gray "Normal Hit: "  +  green "+7 HP"
      */
     private Component stat(String label, String value) {
-        return Component.text("⚡ " + label + ": ", NamedTextColor.YELLOW)
+        return Component.text(label + ": ", NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false)
             .append(Component.text("+" + value + " HP", NamedTextColor.GREEN)
                 .decoration(TextDecoration.ITALIC, false));
     }
 
     /**
-     * Ability header — "Ability:" in dark purple, name in gold, bold.
+     * Ability header — "Ability: " in dark purple, ability name in gold + bold.
      * Example: "Ability: Reflective Guard"
      */
     private Component ability(String name) {
@@ -240,7 +265,7 @@ public final class WeaponFactory {
     }
 
     /**
-     * Keybind line — yellow.
+     * Keybind line — yellow, no italic.
      * Example: "Right-Click"  /  "Sneak + Right-Click"
      */
     private Component keybind(String bind) {
@@ -249,56 +274,40 @@ public final class WeaponFactory {
     }
 
     /**
-     * Description line — white, indented.
+     * Description line — GRAY, indented by two spaces.
      * Example: "  Reflects 80% of incoming damage back to the attacker."
      */
     private Component desc(String s) {
-        return Component.text("  " + s, NamedTextColor.WHITE)
+        return Component.text("  " + s, NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false);
     }
 
     /**
-     * Single cooldown line — green.
-     * Example: "  Cooldown: 30s"
+     * Single cooldown line — green "Cooldown: " + green value.
+     * Example: "Cooldown: 30s"
      */
     private Component cooldown(String s) {
-        return Component.text("  Cooldown: ", NamedTextColor.GREEN)
+        return Component.text("Cooldown: ", NamedTextColor.GREEN)
             .decoration(TextDecoration.ITALIC, false)
             .append(Component.text(s, NamedTextColor.GREEN)
                 .decoration(TextDecoration.ITALIC, false));
     }
 
     /**
-     * Multi-cooldown line for weapons with multiple modes.
-     * Example: "  Cooldown: Attack: 1s  |  Heal: 2s"
+     * Multi-cooldown line for weapons with multiple modes — green.
+     * Example: "Cooldown: Attack: 1s  |  Heal: 2s"
      */
     private Component cooldownMulti(String... entries) {
-        return Component.text("  Cooldown: " + String.join("  |  ", entries), NamedTextColor.GREEN)
+        return Component.text("Cooldown: " + String.join("  |  ", entries), NamedTextColor.GREEN)
             .decoration(TextDecoration.ITALIC, false);
     }
 
     /**
-     * Rarity footer tag — rarity color, all caps.
-     * Rarity → color mapping:
-     *   COMMON    → WHITE
-     *   UNCOMMON  → GREEN
-     *   RARE      → BLUE
-     *   VERY RARE → DARK_AQUA
-     *   EPIC      → DARK_PURPLE
-     *   LEGENDARY → GOLD
-     *
-     * Example: rarity("LEGENDARY", "ARCHMAGE'S WAND") → "LEGENDARY ARCHMAGE'S WAND" in gold
+     * Rarity footer — rarity color, bold, ALL CAPS.
+     * Example: rarity("LEGENDARY", "ARCHMAGE'S WAND") → gold bold "LEGENDARY ARCHMAGE'S WAND"
      */
     private Component rarity(String rarityLabel, String weaponName) {
-        NamedTextColor color = switch (rarityLabel) {
-            case "UNCOMMON"  -> NamedTextColor.GREEN;
-            case "RARE"      -> NamedTextColor.BLUE;
-            case "VERY RARE" -> NamedTextColor.DARK_AQUA;
-            case "EPIC"      -> NamedTextColor.DARK_PURPLE;
-            case "LEGENDARY" -> NamedTextColor.GOLD;
-            default          -> NamedTextColor.WHITE; // COMMON
-        };
-        return Component.text(rarityLabel + " " + weaponName, color)
+        return Component.text(rarityLabel + " " + weaponName, rarityColor(rarityLabel))
             .decoration(TextDecoration.ITALIC, false)
             .decorate(TextDecoration.BOLD);
     }
