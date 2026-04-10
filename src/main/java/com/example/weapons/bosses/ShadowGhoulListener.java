@@ -31,7 +31,7 @@ public final class ShadowGhoulListener implements Listener {
         this.items   = plugin.getBossItems();
     }
 
-    // ── Enderman killed in The End → possible ghoul spawn + bone drop ────────
+    // ── Enderman killed in The End → possible ghoul spawn ───────────────────
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onEndermanDeath(EntityDeathEvent event) {
@@ -41,13 +41,6 @@ public final class ShadowGhoulListener implements Listener {
         if (event.getEntity().getWorld().getEnvironment() != World.Environment.THE_END) return;
 
         Location deathLoc = event.getEntity().getLocation();
-
-        // 1/30 chance: drop 1–3 Assassin's Bones
-        if (rng.nextInt(30) == 0) {
-            ItemStack bone = items.buildAssassinsBone();
-            bone.setAmount(rng.nextInt(3) + 1);
-            event.getDrops().add(bone);
-        }
 
         // 1/80 chance: spawn a Shadow Ghoul
         if (rng.nextInt(80) != 0) return;
@@ -106,4 +99,3 @@ public final class ShadowGhoulListener implements Listener {
         }
     }
 }
-
