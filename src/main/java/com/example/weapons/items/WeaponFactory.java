@@ -95,11 +95,6 @@ public final class WeaponFactory {
                 desc("Next bolt deals 25 HP damage."),
                 cooldown("30s"),
                 Component.empty(),
-                ability("Flame Bolt"),
-                keybind("Right-Click"),
-                desc("Fire a flame particle bolt."),
-                desc("0.5s shot cooldown."),
-                Component.empty(),
                 rarity("UNCOMMON", "Staff")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
@@ -123,11 +118,6 @@ public final class WeaponFactory {
                 desc("Release arcane energy — knocks back ALL nearby enemies."),
                 desc("Heals you for 10% of max HP. 3 charges before cooldown."),
                 cooldown("90s (after 3 uses)"),
-                Component.empty(),
-                ability("Arcane Bolt"),
-                keybind("Right-Click"),
-                desc("Fire an arcane particle bolt."),
-                desc("0.5s shot cooldown."),
                 Component.empty(),
                 rarity("LEGENDARY", "Wand")
             ))
