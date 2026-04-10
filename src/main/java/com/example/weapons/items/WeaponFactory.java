@@ -29,22 +29,23 @@ public final class WeaponFactory {
         };
     }
 
-    // ─── MID-GAME ────────────────────────────────────────────────────────────
+    // ─── WEAPONS ─────────────────────────────────────────────────────────────
 
+    // RARE
     private ItemStack buildGreatsword() {
         return new ItemBuilder(Material.NETHERITE_SWORD)
-            .name(text("⚔ Greatsword", NamedTextColor.RED))
+            .name(text("⚔ Greatsword", NamedTextColor.BLUE))
             .lore(List.of(
-                gray("Mid-Game Weapon"),
-                Component.empty(),
                 stat("Normal Hit", "7"),
                 stat("Critical Hit", "10"),
                 Component.empty(),
-                abilityTitle("Reflective Guard"),
-                hint("Right-Click to activate a 5s shield."),
-                hint("Reflects 80% of incoming damage"),
-                hint("back to the attacker."),
-                cooldown("30 seconds")
+                ability("Reflective Guard"),
+                keybind("Right-Click"),
+                desc("Activate a 5-second damage-absorbing shield."),
+                desc("Reflects 80% of incoming damage back to the attacker."),
+                cooldown("30s"),
+                Component.empty(),
+                rarity("RARE", "GREATSWORD")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -54,22 +55,21 @@ public final class WeaponFactory {
             .build();
     }
 
-    // ─── LATE-GAME ────────────────────────────────────────────────────────────
-
+    // EPIC
     private ItemStack buildDominicanAxe() {
         return new ItemBuilder(Material.NETHERITE_AXE)
-            .name(text("⚒ Dominican Axe", NamedTextColor.DARK_RED))
+            .name(text("⚒ Dominican Axe", NamedTextColor.DARK_PURPLE))
             .lore(List.of(
-                gray("Late-Game Weapon"),
-                Component.empty(),
                 stat("Normal Hit", "10"),
                 stat("Critical Hit", "13"),
                 Component.empty(),
-                abilityTitle("Ground Smash"),
-                hint("Right-Click to slam the ground."),
-                hint("Pushes all nearby enemies away"),
-                hint("and deals 20 damage in the area."),
-                cooldown("10 seconds")
+                ability("Ground Smash"),
+                keybind("Right-Click"),
+                desc("Slam the ground, pushing all nearby enemies away."),
+                desc("Deals +20 HP to all enemies in the area."),
+                cooldown("10s"),
+                Component.empty(),
+                rarity("EPIC", "DOMINICAN AXE")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -79,21 +79,25 @@ public final class WeaponFactory {
             .build();
     }
 
+    // UNCOMMON
     private ItemStack buildArcanistStaff() {
         return new ItemBuilder(Material.BLAZE_ROD)
-            .name(text("✦ Arcanist Staff", NamedTextColor.AQUA))
+            .name(text("✦ Arcanist Staff", NamedTextColor.GREEN))
             .lore(List.of(
-                gray("Late-Game Weapon  |  Wand"),
+                stat("Particle Shot", "4"),
                 Component.empty(),
-                stat("Particle Shot Damage", "4"),
+                ability("Charged Shot"),
+                keybind("Sneak + Right-Click"),
+                desc("Charge your next particle shot."),
+                desc("Next bolt deals +25 HP damage."),
+                cooldown("30s"),
                 Component.empty(),
-                abilityTitle("Charged Shot"),
-                hint("Sneak + Right-Click to charge."),
-                hint("Your next particle shot deals 25 damage."),
-                cooldown("30 seconds"),
+                ability("Flame Bolt"),
+                keybind("Right-Click"),
+                desc("Fire a flame particle bolt."),
+                desc("0.5s shot cooldown."),
                 Component.empty(),
-                hint("Right-Click to fire a flame particle bolt."),
-                hint("0.5s shot cooldown.")
+                rarity("UNCOMMON", "ARCANIST STAFF")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -103,23 +107,25 @@ public final class WeaponFactory {
             .build();
     }
 
+    // LEGENDARY
     private ItemStack buildArchmagesWand() {
         return new ItemBuilder(Material.END_ROD)
-            .name(text("✦ Archmage's Wand", NamedTextColor.LIGHT_PURPLE))
+            .name(text("✦ Archmage's Wand", NamedTextColor.GOLD))
             .lore(List.of(
-                gray("Late-Game Weapon  |  Wand"),
+                stat("Particle Shot", "8"),
                 Component.empty(),
-                stat("Particle Shot Damage", "8"),
+                ability("Arcane Burst"),
+                keybind("Sneak + Right-Click"),
+                desc("Release arcane energy — knocks back ALL nearby enemies."),
+                desc("Heals you for 10% of max HP. 3 charges before cooldown."),
+                cooldown("90s (after 3 uses)"),
                 Component.empty(),
-                abilityTitle("Arcane Burst"),
-                hint("Sneak + Right-Click to release arcane energy."),
-                hint("Knocks back ALL nearby enemies."),
-                hint("Heals you for 10% of max health."),
-                hint("3 charges before entering cooldown."),
-                cooldown("90 seconds (after 3 uses)"),
+                ability("Arcane Bolt"),
+                keybind("Right-Click"),
+                desc("Fire an arcane particle bolt."),
+                desc("0.5s shot cooldown."),
                 Component.empty(),
-                hint("Right-Click to fire an arcane particle bolt."),
-                hint("0.5s shot cooldown.")
+                rarity("LEGENDARY", "ARCHMAGE'S WAND")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -129,20 +135,21 @@ public final class WeaponFactory {
             .build();
     }
 
+    // VERY RARE
     private ItemStack buildShadowblade() {
         return new ItemBuilder(Material.IRON_SWORD)
-            .name(text("☠ Shadowblade", NamedTextColor.DARK_PURPLE))
+            .name(text("☠ Shadowblade", NamedTextColor.DARK_AQUA))
             .lore(List.of(
-                gray("Mid-Game Weapon"),
-                Component.empty(),
                 stat("Normal Hit", "5.6"),
                 stat("Critical Hit", "7"),
                 Component.empty(),
-                abilityTitle("Shadowstep"),
-                hint("Right-Click to dash 5 blocks forward."),
-                hint("Damages enemies in your path."),
-                hint("Applies Bleeding: 1 dmg/sec for 7s."),
-                cooldown("10 seconds")
+                ability("Shadowstep"),
+                keybind("Right-Click"),
+                desc("Dash 5 blocks forward, damaging enemies in your path."),
+                desc("Applies Bleeding: +1 HP damage per second for 7 seconds."),
+                cooldown("10s"),
+                Component.empty(),
+                rarity("VERY RARE", "SHADOWBLADE")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -152,21 +159,22 @@ public final class WeaponFactory {
             .build();
     }
 
+    // LEGENDARY
     private ItemStack buildAssassinsBlade() {
         return new ItemBuilder(Material.GOLDEN_SWORD)
             .name(text("☠ Assassin's Blade", NamedTextColor.GOLD))
             .lore(List.of(
-                gray("Late-Game Weapon"),
-                Component.empty(),
                 stat("Normal Hit", "7.2"),
                 stat("Critical Hit", "9"),
                 Component.empty(),
-                abilityTitle("The Shadow"),
-                hint("Right-Click to vanish for 10 seconds."),
-                hint("Grants Speed III. Enemies cannot"),
-                hint("see or attack you."),
-                hint("Natural healing disabled (potions work)."),
-                cooldown("10 seconds")
+                ability("The Shadow"),
+                keybind("Right-Click"),
+                desc("Vanish for 10 seconds. Grants Speed III."),
+                desc("Enemies cannot see or attack you."),
+                desc("Natural healing disabled (potions still work)."),
+                cooldown("10s"),
+                Component.empty(),
+                rarity("LEGENDARY", "ASSASSIN'S BLADE")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -176,27 +184,22 @@ public final class WeaponFactory {
             .build();
     }
 
-    // ─── SUPPORT ──────────────────────────────────────────────────────────────
-
+    // EPIC
     private ItemStack buildHarmonyWand() {
         return new ItemBuilder(Material.STICK)
-            .name(text("Harmony Wand", NamedTextColor.GREEN))
+            .name(text("Harmony Wand", NamedTextColor.DARK_PURPLE))
             .lore(List.of(
-                gray("Support Weapon  |  Wand"),
+                ability("Harmony Bolt"),
+                keybind("Right-Click"),
+                desc("Fire a damage bolt — deals +4 HP × 3 pulses (1s apart)."),
                 Component.empty(),
-                abilityTitle("Harmony Bolt"),
+                keybind("Sneak + Right-Click"),
+                desc("Fire a healing bolt — restores +4 HP × 3 pulses (1s apart)."),
+                desc("Multiple bolts can stack on the same target."),
                 Component.empty(),
-                Component.text(" ▸ Right-Click: ", NamedTextColor.RED)
-                    .decoration(TextDecoration.ITALIC, false)
-                    .append(Component.text("Damage bolt — 4 HP × 3 pulses (1s apart)", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false)),
-                Component.text(" ▸ Sneak + Right-Click: ", NamedTextColor.GREEN)
-                    .decoration(TextDecoration.ITALIC, false)
-                    .append(Component.text("Healing bolt — 4 HP × 3 pulses (1s apart)", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false)),
+                cooldownMulti("Attack: 1s", "Heal: 2s"),
                 Component.empty(),
-                hint("Can stack multiple bolts on the same target."),
-                hint("Attack: 1s cooldown  |  Heal: 2s cooldown.")
+                rarity("EPIC", "HARMONY WAND")
             ))
             .enchant(Enchantment.UNBREAKING, 1)
             .flag(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
@@ -208,27 +211,95 @@ public final class WeaponFactory {
 
     // ─── Lore helpers ─────────────────────────────────────────────────────────
 
+    /** White item name / rarity tag text. */
     private Component text(String s, NamedTextColor color) {
         return Component.text(s, color).decoration(TextDecoration.ITALIC, false);
     }
-    private Component gray(String s) {
-        return Component.text(s, NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false);
-    }
+
+    /**
+     * Stat line — yellow label, green value with +HP suffix.
+     * Example: "⚡ Normal Hit: +7 HP"
+     */
     private Component stat(String label, String value) {
         return Component.text("⚡ " + label + ": ", NamedTextColor.YELLOW)
             .decoration(TextDecoration.ITALIC, false)
-            .append(Component.text(value, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+            .append(Component.text("+" + value + " HP", NamedTextColor.GREEN)
+                .decoration(TextDecoration.ITALIC, false));
     }
-    private Component abilityTitle(String name) {
-        return Component.text("✦ " + name, NamedTextColor.GOLD)
-            .decoration(TextDecoration.ITALIC, false).decorate(TextDecoration.BOLD);
-    }
-    private Component hint(String s) {
-        return Component.text("  " + s, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false);
-    }
-    private Component cooldown(String s) {
-        return Component.text("  ⏱ Cooldown: ", NamedTextColor.DARK_AQUA)
+
+    /**
+     * Ability header — "Ability:" in dark purple, name in gold, bold.
+     * Example: "Ability: Reflective Guard"
+     */
+    private Component ability(String name) {
+        return Component.text("Ability: ", NamedTextColor.DARK_PURPLE)
             .decoration(TextDecoration.ITALIC, false)
-            .append(Component.text(s, NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
+            .append(Component.text(name, NamedTextColor.GOLD)
+                .decoration(TextDecoration.ITALIC, false)
+                .decorate(TextDecoration.BOLD));
+    }
+
+    /**
+     * Keybind line — yellow.
+     * Example: "Right-Click"  /  "Sneak + Right-Click"
+     */
+    private Component keybind(String bind) {
+        return Component.text(bind, NamedTextColor.YELLOW)
+            .decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Description line — white, indented.
+     * Example: "  Reflects 80% of incoming damage back to the attacker."
+     */
+    private Component desc(String s) {
+        return Component.text("  " + s, NamedTextColor.WHITE)
+            .decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Single cooldown line — green.
+     * Example: "  Cooldown: 30s"
+     */
+    private Component cooldown(String s) {
+        return Component.text("  Cooldown: ", NamedTextColor.GREEN)
+            .decoration(TextDecoration.ITALIC, false)
+            .append(Component.text(s, NamedTextColor.GREEN)
+                .decoration(TextDecoration.ITALIC, false));
+    }
+
+    /**
+     * Multi-cooldown line for weapons with multiple modes.
+     * Example: "  Cooldown: Attack: 1s  |  Heal: 2s"
+     */
+    private Component cooldownMulti(String... entries) {
+        return Component.text("  Cooldown: " + String.join("  |  ", entries), NamedTextColor.GREEN)
+            .decoration(TextDecoration.ITALIC, false);
+    }
+
+    /**
+     * Rarity footer tag — rarity color, all caps.
+     * Rarity → color mapping:
+     *   COMMON    → WHITE
+     *   UNCOMMON  → GREEN
+     *   RARE      → BLUE
+     *   VERY RARE → DARK_AQUA
+     *   EPIC      → DARK_PURPLE
+     *   LEGENDARY → GOLD
+     *
+     * Example: rarity("LEGENDARY", "ARCHMAGE'S WAND") → "LEGENDARY ARCHMAGE'S WAND" in gold
+     */
+    private Component rarity(String rarityLabel, String weaponName) {
+        NamedTextColor color = switch (rarityLabel) {
+            case "UNCOMMON"  -> NamedTextColor.GREEN;
+            case "RARE"      -> NamedTextColor.BLUE;
+            case "VERY RARE" -> NamedTextColor.DARK_AQUA;
+            case "EPIC"      -> NamedTextColor.DARK_PURPLE;
+            case "LEGENDARY" -> NamedTextColor.GOLD;
+            default          -> NamedTextColor.WHITE; // COMMON
+        };
+        return Component.text(rarityLabel + " " + weaponName, color)
+            .decoration(TextDecoration.ITALIC, false)
+            .decorate(TextDecoration.BOLD);
     }
 }
